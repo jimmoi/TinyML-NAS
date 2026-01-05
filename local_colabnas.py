@@ -19,7 +19,7 @@ class LocalColabNAS:
         
         self.learning_rate = 1e-3
         self.batch_size = 32  # Reduced for local machines
-        self.epochs = 50      # Reduced for faster local execution
+        self.epochs = 100      # Reduced for faster local execution
         
         self.max_MACC = max_MACC
         self.max_Flash = max_Flash
@@ -72,8 +72,8 @@ class LocalColabNAS:
             n = int(np.ceil(n * multiplier))
             multiplier = multiplier - 2**-i
             x = tf.keras.layers.MaxPooling2D(pool_size=pool_size, 
-                                           strides=pool_strides, 
-                                           padding='valid')(x)
+                                            strides=pool_strides, 
+                                            padding='valid')(x)
             c_in = x.shape[3]
             x = tf.keras.layers.Conv2D(n, kernel_size, padding='same')(x)
             x = tf.keras.layers.BatchNormalization()(x)
@@ -97,8 +97,8 @@ class LocalColabNAS:
         
         opt = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
         model.compile(optimizer=opt,
-                     loss='categorical_crossentropy',
-                     metrics=['accuracy'])
+                        loss='categorical_crossentropy',
+                        metrics=['accuracy'])
         
         return model, number_of_mac, number_of_cells_limited
     
@@ -282,7 +282,7 @@ class LocalColabNAS:
             k = 2 * k
             current_architecture = self.explore_num_cells(k)
             while (current_architecture['max_val_acc'] > 
-                   previous_architecture['max_val_acc'] + epsilon):
+                previous_architecture['max_val_acc'] + epsilon):
                 previous_architecture = current_architecture
                 k = 2 * k
                 current_architecture = self.explore_num_cells(k)
@@ -290,7 +290,7 @@ class LocalColabNAS:
             k = k0 / 2
             current_architecture = self.explore_num_cells(k)
             while (current_architecture['max_val_acc'] >= 
-                   previous_architecture['max_val_acc']):
+                previous_architecture['max_val_acc']):
                 previous_architecture = current_architecture
                 k = k / 2
                 current_architecture = self.explore_num_cells(k)
