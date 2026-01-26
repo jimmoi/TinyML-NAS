@@ -7,7 +7,7 @@ class ABC_NAS(abc.ABC):
         self.num_classes = num_classes
         self.learning_rate = learning_rate
         self.model_name = ""
-    
+        self.iterations_accuracy = []
     @abc.abstractmethod
     def search(self):
         pass

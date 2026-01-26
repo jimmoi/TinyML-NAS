@@ -82,25 +82,29 @@ class Vanilla_NAS(ABC_NAS):
     current_architecture = self.explore_num_cells(k)
 
     if (current_architecture['max_val_acc'] > previous_architecture['max_val_acc']) :
+        self.iterations_accuracy.append(current_architecture['max_val_acc']) 
         previous_architecture = current_architecture
         k = 2 * k
         current_architecture = self.explore_num_cells(k)
         while(current_architecture['max_val_acc'] > previous_architecture['max_val_acc'] + epsilon) :
+            self.iterations_accuracy.append(current_architecture['max_val_acc']) 
             previous_architecture = current_architecture
             k = 2 * k
             current_architecture = self.explore_num_cells(k)
     else :
         k = k0 / 2
+        self.iterations_accuracy.append(previous_architecture['max_val_acc']) 
         current_architecture = self.explore_num_cells(k)
         while(current_architecture['max_val_acc'] >= previous_architecture['max_val_acc']) :
+            self.iterations_accuracy.append(current_architecture['max_val_acc']) 
             previous_architecture = current_architecture
             k = k / 2
             current_architecture = self.explore_num_cells(k)
 
-    resulting_architecture = previous_architecture
+    resulting_architecture_dict = previous_architecture
     end = datetime.datetime.now()
 
-    return resulting_architecture, end-start
+    return resulting_architecture_dict, end-start, self.iterations_accuracy
 
   def explore_num_cells(self, k) :
       previous_architecture = {'k': -1, 'c': -1, 'max_val_acc': -2}
@@ -113,6 +117,7 @@ class Vanilla_NAS(ABC_NAS):
           c = c + 1
           self.model_counter = self.model_counter + 1
           current_architecture = self.evaluate_model_process(k, c)
+          self.iterations_accuracy.append(current_architecture['max_val_acc'])
           print(f"\n\n\n{current_architecture}\n\n\n")
       return previous_architecture
 

@@ -5,6 +5,8 @@ import subprocess
 import shutil
 import re
 import os
+import time
+import io
 
 class ColabNAS :
     architecture_name = 'resulting_architecture'
@@ -134,9 +136,14 @@ class ColabNAS :
         if MACC <= self.max_MACC and Flash <= self.max_Flash and RAM <= self.max_RAM and not number_of_cells_limited :
             hist = model.fit(self.train_ds, epochs=self.epochs - 1, validation_data=self.validation_ds, validation_freq=1, callbacks=[checkpoint])
             self.quantize_model_uint8(model_name)
+            
+            stringio = io.StringIO()
+            model.summary(print_fn=lambda x: stringio.write(x + '\n'))
+            model_summary = stringio.getvalue()
             return {'RAM': RAM,
                     'Flash': Flash,
                     'MACC': MACC,
+                    'model_architecture':model_summary,
                     'max_val_acc':
                     np.around(np.amax(hist.history['val_accuracy']), decimals=3)
                     if 'hist' in locals() else -3}
@@ -144,22 +151,47 @@ class ColabNAS :
             return {'max_val_acc':0}
 
     def search(self, NAS):
-      nas = NAS(
-        evaluate_model_fnc = self.evaluate_model, 
-        input_shape = self.input_shape, 
-        num_classes = self.num_classes, 
-        learning_rate = self.learning_rate
+        
+        search_output = {
+            "time":None,
+            "iterations_accuracy":None,
+            "best_RAM":None,
+            "best_Flash":None,
+            "best_MACC":None,
+            "best_architecture":None,
+            "path_to_best_architecture":None
+        }
+        
+        nas = NAS(
+            evaluate_model_fnc = self.evaluate_model, 
+            input_shape = self.input_shape, 
+            num_classes = self.num_classes, 
+            learning_rate = self.learning_rate
         )
-      resulting_architecture, take_time = nas.search()
+        resulting_architecture_dict, take_time, iterations_accuracy = nas.search()
 
-      if (resulting_architecture['max_val_acc'] > 0) :
-            resulting_architecture_name = f"k_{resulting_architecture['k']}_c_{resulting_architecture['c']}.tflite"
-            self.path_to_resulting_architecture = self.save_path / f"resulting_architecture_{resulting_architecture_name}"
-            (self.path_to_trained_models / f"{resulting_architecture_name}").rename(self.path_to_resulting_architecture)
+        if (resulting_architecture_dict['max_val_acc'] > 0) :
+            resulting_architecture_name = f"k_{resulting_architecture_dict['k']}_c_{resulting_architecture_dict['c']}.tflite"
+            path_to_resulting_architecture = self.save_path / f"resulting_architecture_{resulting_architecture_name}"
+            (self.path_to_trained_models / f"{resulting_architecture_name}").rename(path_to_resulting_architecture)
             shutil.rmtree(self.path_to_trained_models)
-            print(f"\nResulting architecture: {resulting_architecture}\n")
-      else :
-          print(f"\nNo feasible architecture found\n")
-      print(f"Elapsed time (search): {take_time}\n")
-
-      return self.path_to_resulting_architecture
+            print(f"\nResulting architecture: {resulting_architecture_dict}\n")\
+                
+            search_output = {
+                "time":str(take_time),
+                "iterations_accuracy":iterations_accuracy,
+                "best_RAM":resulting_architecture_dict['RAM'],
+                "best_Flash":resulting_architecture_dict['Flash'],
+                "best_MACC":resulting_architecture_dict['MACC'],
+                "best_accuracy":resulting_architecture_dict['max_val_acc'],
+                "best_architecture":{'k':resulting_architecture_dict['k'], 'c':resulting_architecture_dict['c']},
+                "model_architecture":resulting_architecture_dict['model_architecture'],
+                "path_to_best_architecture":str(path_to_resulting_architecture)
+            }
+            
+            return search_output
+        else :
+            print(f"\nNo feasible architecture found\n")
+        print(f"Elapsed time (search): {take_time}\n")
+        
+        return None

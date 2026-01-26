@@ -77,6 +77,72 @@ class ModelDecoder:
         
         return model, number_of_mac, number_of_cells_limited
 
+class ModelDecoder2:
+    def __init__(self, input_shape=(32, 32, 3), num_classes=10, learning_rate=0.001):
+        self.input_shape = input_shape
+        self.num_classes = num_classes
+        self.learning_rate = learning_rate
+
+    def decode_and_build(self, k, c):
+        """Transforms PSO coordinates into a Fully Convolutional Keras model."""
+        k, c = int(k), int(c)
+        kernel_size = (3, 3)
+        pool_size = (2, 2)
+        
+        number_of_mac = 0
+        number_of_cells_limited = False
+        
+        inputs = keras.Input(shape=self.input_shape)
+        n = k
+        multiplier = 2
+        
+        # --- Feature Extractor (Backbone) ---
+        c_in = self.input_shape[2]
+        x = keras.layers.Conv2D(n, kernel_size, padding='same')(inputs)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.ReLU()(x)
+        
+        number_of_mac += (c_in * np.prod(kernel_size) * x.shape[1] * x.shape[2] * x.shape[3])
+
+        for i in range(1, c + 1):
+            if x.shape[1] <= 1 or x.shape[2] <= 1:
+                number_of_cells_limited = True
+                break
+            
+            n = int(np.ceil(n * multiplier))
+            multiplier -= 2**-i
+            x = keras.layers.MaxPooling2D(pool_size=pool_size, strides=(2,2), padding='valid')(x)
+            
+            c_in = x.shape[3]
+            x = keras.layers.Conv2D(n, kernel_size, padding='same')(x)
+            x = keras.layers.BatchNormalization()(x)
+            x = keras.layers.ReLU()(x)
+            number_of_mac += (c_in * np.prod(kernel_size) * x.shape[1] * x.shape[2] * x.shape[3])
+
+        # --- Fully Convolutional Classifier ---
+        # Instead of Global Pooling, we ensure spatial dimensions are 1x1 
+        # using a final GlobalAveragePooling then expanding, or just GlobalAveragePooling
+        # To keep it "Purely Convolutional", we use a global pool followed by 1x1 convolutions
+        x = keras.layers.GlobalAveragePooling2D()(x) 
+        # Reshape to (1, 1, filters) so we can apply Conv2D
+        x = keras.layers.Reshape((1, 1, x.shape[1]))(x)
+
+        # Convolutional replacement for Dense(n)
+        c_in = x.shape[3]
+        x = keras.layers.Conv2D(filters=self.num_classes, kernel_size=(1, 1), padding='same')(x)
+        x = keras.layers.ReLU()(x)
+        number_of_mac += (c_in * 1 * 1 * x.shape[1] * x.shape[2] * x.shape[3])
+
+        # Flatten the (1, 1, num_classes) output to (num_classes,) for the loss function
+        x = keras.layers.Flatten()(x)
+        outputs = keras.layers.Softmax()(x)
+
+        model = keras.Model(inputs=inputs, outputs=outputs)
+        opt = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+        model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+        
+        return model, number_of_mac, number_of_cells_limited
+
 # --- 3. EVALUATOR & CONSTRAINTS ---
 class PSO_NAS(ABC_NAS):
     def __init__(self, evaluate_model_fnc, input_shape, num_classes, learning_rate):
@@ -124,6 +190,8 @@ class PSO_NAS(ABC_NAS):
                     self.model_name = f"k_{int(k)}_c_{int(c)}"
                     results = self.evaluate_model_fnc(model, macc, limited, self.model_name)
                     score = results['max_val_acc']
+                    
+                self.iterations_accuracy.append(score)
 
                 # Update Personal Best
                 if score > p_best_scores[i]:
@@ -156,13 +224,16 @@ class PSO_NAS(ABC_NAS):
 
         results_best["k"] = int(g_best[0])
         results_best["c"] = int(g_best[1])
+        results_best["n_particles"] = self.n_particles
+        results_best["iterations"] = self.iterations
+        
         
         end = datetime.datetime.now()
-        return results_best, end-start
+        return results_best, end-start, self.iterations_accuracy
     
     def setup(search_space, decoder,  n_particles=5, iterations=10):
-        NASPsoOptimizer.n_particles = n_particles
-        NASPsoOptimizer.iterations = iterations
-        NASPsoOptimizer.space = search_space
-        NASPsoOptimizer.decoder = decoder
-        return NASPsoOptimizer
+        PSO_NAS.n_particles = n_particles
+        PSO_NAS.iterations = iterations
+        PSO_NAS.space = search_space
+        PSO_NAS.decoder = decoder
+        return PSO_NAS
