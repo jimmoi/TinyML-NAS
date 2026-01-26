@@ -80,25 +80,35 @@ class ColabNAS :
     def get_data(self):
         return self.train_ds, self.validation_ds
 
-    def quantize_model_uint8(self, model_name) :
+    def quantize_model_uint8(self, model_name):
         def representative_dataset():
             count = 0
             for images, labels in self.train_ds:
                 for i in range(images.shape[0]):
                     if count >= 150:
                         return
-                    # Expand dims to make it (1, H, W, C)
-                    yield [tf.dtypes.cast(images[i:i+1], tf.float32)]
-                    count += 1
+                # Ensure the data matches the model's expected input shape and type
+                yield [tf.dtypes.cast(images[i:i+1], tf.float32)]
+                count += 1
 
         model = tf.keras.models.load_model(self.path_to_trained_models / f"{model_name}.h5")
         converter = tf.lite.TFLiteConverter.from_keras_model(model)
+    
+        # 1. Standard optimizations
         converter.optimizations = [tf.lite.Optimize.DEFAULT]
         converter.representative_dataset = representative_dataset
-        converter.target_spec.supported_types = [tf.int8]
+    
+        # 2. ENFORCE Integer-only (Crucial for STM32)
         converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
+    
+        # 3. Explicitly set input/output to UINT8 for the hardware interface
         converter.inference_input_type = tf.uint8
         converter.inference_output_type = tf.uint8
+
+        # 4. Mandatory for some TFLite versions to ensure full quantization
+        # This prevents the "fully_quantize: 0" status you saw earlier
+        converter._experimental_new_quantizer = True 
+
         tflite_quant_model = converter.convert()
 
         with open(self.path_to_trained_models / f"{model_name}.tflite", 'wb') as f:

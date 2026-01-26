@@ -61,7 +61,7 @@ def main():
     data_dir = tf.keras.utils.get_file('flower_photos.tar', origin=dataset_url, extract=True)
     data_dir = Path(data_dir).with_suffix('')
     
-    manager = Manager(path_to_training_set=data_dir, experiment_name="Test_PSO_full_cov")
+    manager = Manager(path_to_training_set=data_dir, experiment_name="Test_PSO_full_cov_particle_10_iter_20")
     nas = manager.setup_nas()
 
     #search
