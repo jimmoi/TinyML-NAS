@@ -27,6 +27,7 @@ class Manager:
         self.experiment_name = experiment_name
         self.experiment_dir = None
         
+        
     def create_experiment_dir(self):
         self.experiment_dir = all_experiment_dir / Path(self.experiment_name)
         self.experiment_dir.mkdir(exist_ok=True)

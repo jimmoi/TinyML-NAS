@@ -61,13 +61,14 @@ def main():
     data_dir = tf.keras.utils.get_file('flower_photos.tar', origin=dataset_url, extract=True)
     data_dir = Path(data_dir).with_suffix('')
     
-    manager = Manager(path_to_training_set=data_dir, experiment_name="Test_PSO_full_cov_particle_10_iter_20")
+    manager = Manager(path_to_training_set=data_dir, experiment_name="vanillaNAS_CNNv2")
     nas = manager.setup_nas()
 
     #search
     search_space = ArchitectureSearchSpace(k_range=(2, 10), c_range=(1, 5))
     decoder = ModelDecoder2()
-    search_output = nas.search(PSO_NAS.setup(search_space, decoder))
+    # search_output = nas.search(PSO_NAS.setup(search_space, decoder))
+    search_output = nas.search(VanillaCNN_NAS)
     
     
     

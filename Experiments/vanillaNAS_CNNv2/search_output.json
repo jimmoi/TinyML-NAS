@@ -1,0 +1,29 @@
+{
+    "time": "0:04:48.771562",
+    "iterations_accuracy": [
+        0.446,
+        0.615,
+        0.688,
+        0.649,
+        0.458,
+        0.631,
+        0.661,
+        0.659,
+        0.688,
+        0.315,
+        0.521,
+        0.578,
+        0.616,
+        0.526
+    ],
+    "best_RAM": 21504,
+    "best_Flash": 8408,
+    "best_MACC": 574476,
+    "best_accuracy": 0.688,
+    "best_architecture": {
+        "k": 4,
+        "c": 2
+    },
+    "model_architecture": "Model: \"model_2\"\n_________________________________________________________________\n Layer (type)                Output Shape              Param #   \n=================================================================\n input_3 (InputLayer)        [(None, 50, 50, 3)]       0         \n                                                                 \n conv2d_5 (Conv2D)           (None, 50, 50, 4)         112       \n                                                                 \n batch_normalization_3 (Batc  (None, 50, 50, 4)        16        \n hNormalization)                                                 \n                                                                 \n re_lu_3 (ReLU)              (None, 50, 50, 4)         0         \n                                                                 \n max_pooling2d_1 (MaxPooling  (None, 25, 25, 4)        0         \n 2D)                                                             \n                                                                 \n conv2d_6 (Conv2D)           (None, 25, 25, 8)         296       \n                                                                 \n batch_normalization_4 (Batc  (None, 25, 25, 8)        32        \n hNormalization)                                                 \n                                                                 \n re_lu_4 (ReLU)              (None, 25, 25, 8)         0         \n                                                                 \n max_pooling2d_2 (MaxPooling  (None, 12, 12, 8)        0         \n 2D)                                                             \n                                                                 \n conv2d_7 (Conv2D)           (None, 12, 12, 12)        876       \n                                                                 \n batch_normalization_5 (Batc  (None, 12, 12, 12)       48        \n hNormalization)                                                 \n                                                                 \n re_lu_5 (ReLU)              (None, 12, 12, 12)        0         \n                                                                 \n global_average_pooling2d_2   (None, 12)               0         \n (GlobalAveragePooling2D)                                        \n                                                                 \n reshape_2 (Reshape)         (None, 1, 1, 12)          0         \n                                                                 \n conv2d_8 (Conv2D)           (None, 1, 1, 5)           65        \n                                                                 \n flatten_2 (Flatten)         (None, 5)                 0         \n                                                                 \n softmax_2 (Softmax)         (None, 5)                 0         \n                                                                 \n=================================================================\nTotal params: 1,445\nTrainable params: 1,397\nNon-trainable params: 48\n_________________________________________________________________\n",
+    "path_to_best_architecture": "Experiments\\vanillaNAS_CNNv2\\resulting_architecture_k_4_c_2.tflite",
+    "val_losses": 

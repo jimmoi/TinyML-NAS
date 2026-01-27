@@ -156,7 +156,9 @@ class ColabNAS :
                     'model_architecture':model_summary,
                     'max_val_acc':
                     np.around(np.amax(hist.history['val_accuracy']), decimals=3)
-                    if 'hist' in locals() else -3}
+                    if 'hist' in locals() else -3,
+                    'final_train_loss': np.around(hist.history['loss'], 6),
+                    'final_val_loss': np.around(hist.history['val_loss'], 6),}
         else :
             return {'max_val_acc':0}
 
@@ -168,8 +170,12 @@ class ColabNAS :
             "best_RAM":None,
             "best_Flash":None,
             "best_MACC":None,
+            "best_accuracy":None,
             "best_architecture":None,
-            "path_to_best_architecture":None
+            "path_to_best_architecture":None,
+            "val_losses":None,
+            "train_losses":None,
+            
         }
         
         nas = NAS(
@@ -196,7 +202,9 @@ class ColabNAS :
                 "best_accuracy":resulting_architecture_dict['max_val_acc'],
                 "best_architecture":{'k':resulting_architecture_dict['k'], 'c':resulting_architecture_dict['c']},
                 "model_architecture":resulting_architecture_dict['model_architecture'],
-                "path_to_best_architecture":str(path_to_resulting_architecture)
+                "path_to_best_architecture":str(path_to_resulting_architecture),
+                "val_losses": resulting_architecture_dict['final_val_loss'],
+                "train_losses": resulting_architecture_dict['final_train_loss']
             }
             
             return search_output
