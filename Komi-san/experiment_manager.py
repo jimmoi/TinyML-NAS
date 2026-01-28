@@ -7,10 +7,11 @@ all_experiment_dir.mkdir(exist_ok=True)
 
 class Manager:
     def __init__(self, 
+                 path_to_training_set,
+                 experiment_dir,
                  peak_RAM_upper_bound = 40960, 
                  Flash_upper_bound = 131072, 
                  MACC_upper_bound = 2730000, 
-                 path_to_training_set = '', 
                  val_split = 0.3, 
                  cache = True, 
                  input_shape = (50,50,3), 
@@ -26,11 +27,11 @@ class Manager:
         self.cache = cache
         self.input_shape = input_shape
         self.experiment_name = experiment_name
-        self.experiment_dir = None
+        self.experiment_dir = experiment_dir
         
         
     def create_experiment_dir(self):
-        self.experiment_dir = all_experiment_dir / Path(self.experiment_name)
+        self.experiment_dir = self.experiment_dir / Path(self.experiment_name)
         try:
             self.experiment_dir.mkdir(exist_ok=False)
         except FileExistsError:
@@ -39,7 +40,7 @@ class Manager:
         
     def setup_nas(self):
         self.create_experiment_dir()
-        nas = ColabNAS(self.peak_RAM_upper_bound, self.Flash_upper_bound, self.MACC_upper_bound, self.path_to_training_set, self.val_split, self.cache, self.input_shape, save_path=self.experiment_dir)
+        nas = ColabNAS(self.peak_RAM_upper_bound, self.Flash_upper_bound, self.MACC_upper_bound, self.path_to_training_set, self.val_split, cache=self.cache, input_shape=self.input_shape, save_path=self.experiment_dir)
         return nas
     
     def visualize(self, search_output):

@@ -1,7 +1,7 @@
 from tensorflow import keras
 from pathlib import Path
 import tensorflow as tf
-from experiment_manager import Manager
+from experiment_manager import Manager, all_experiment_dir
 from Optimizer import *
 from my_util import load_dataset, test_tflite_model
 import sys
@@ -22,27 +22,45 @@ def main():
     else:
         print("No GPU devices found. TensorFlow is likely using the CPU.")
     
-    dataset_url = "https://storage.googleapis.com/download.tensorflow.org/example_images/flower_photos.tgz"
-    data_dir = tf.keras.utils.get_file('flower_photos.tar', origin=dataset_url, extract=True)
-    data_dir = Path(data_dir).with_suffix('')
+    # dataset_url = "https://storage.googleapis.com/download.tensorflow.org/example_images/flower_photos.tgz"
+    # data_dir = tf.keras.utils.get_file('flower_photos.tar', origin=dataset_url, extract=True)
+    # data_dir = Path(data_dir).with_suffix('')
     
-    manager = Manager(path_to_training_set=data_dir, experiment_name="vanillaNAS_fullyCNN")
-    nas = manager.setup_nas()
+    datasets_dir = Path("Datasets")
+    for data_dir in datasets_dir.iterdir() :
+        if data_dir.is_dir() and data_dir.name == "Flowers-4" :
+            experiment_dir = all_experiment_dir / data_dir.name
+            experiment_dir.mkdir(parents=False, exist_ok=True)
+            
+            train_path_dir = data_dir / "train"
+            test_path_dir = data_dir / "test"
+    
+            manager = Manager(train_path_dir, experiment_dir=experiment_dir, experiment_name="vanillaNAS_dense")
+            nas = manager.setup_nas()
 
-    # search_output = nas.search(PSO_NAS.setup(search_space, decoder))
-    search_output = nas.search(VanillaCNN_NAS)
-    
-    _, test_ds = nas.get_data()
-    tflite_accuracy = test_tflite_model(search_output['path_to_best_architecture'], test_ds)
-    search_output["tflite_accuracy"] = round(tflite_accuracy, 4)
-    
-    manager.visualize(search_output)
-    
-    try:
-        with open(manager.experiment_dir / "search_output.pkl", "wb") as f:
-            pickle.dump(search_output, f)
-    except Exception as e:
-        print(f"Error: {e}")
+            # search_output = nas.search(PSO_NAS.setup(search_space, decoder))
+            search_output = nas.search(VanillaCNN_NAS)
+            
+            test_ds = tf.keras.utils.image_dataset_from_directory(
+                directory= test_path_dir,
+                labels='inferred',
+                label_mode='categorical',
+                color_mode='rgb',
+                batch_size=1,
+                image_size=(50,50),
+                shuffle=True
+            )
+
+            tflite_accuracy = test_tflite_model(search_output['path_to_best_architecture'], test_ds)
+            search_output["tflite_accuracy"] = round(tflite_accuracy, 4)
+            
+            manager.visualize(search_output)
+            
+            try:
+                with open(manager.experiment_dir / "search_output.pkl", "wb") as f:
+                    pickle.dump(search_output, f)
+            except Exception as e:
+                print(f"Error: {e}")
     
 
 if __name__ == "__main__":

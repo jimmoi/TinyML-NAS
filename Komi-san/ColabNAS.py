@@ -10,7 +10,7 @@ import io
 
 class ColabNAS :
     architecture_name = 'resulting_architecture'
-    def __init__(self, max_RAM, max_Flash, max_MACC, path_to_training_set, val_split, cache=False, input_shape=(50,50,3), save_path='.', path_to_stm32tflm='stm32tflm.exe') :
+    def __init__(self, max_RAM, max_Flash, max_MACC, path_to_training_set, val_split, input_shape, cache=False, save_path='.', path_to_stm32tflm='stm32tflm.exe') :
         self.learning_rate = 1e-3
         self.batch_size = 128
         self.epochs = 100 #minimum 2
