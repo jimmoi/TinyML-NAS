@@ -187,3 +187,70 @@ class VanillaCNN_NAS(Vanilla_NAS):
     model.summary()
     
     return model, number_of_mac, number_of_cells_limited
+
+class Mametoyas_NAS(Vanilla_NAS):
+  architecture_name = 'resulting_architecture'
+  def __init__(self, evaluate_model_fnc, input_shape, num_classes, learning_rate):
+    super().__init__(evaluate_model_fnc, input_shape, num_classes, learning_rate)
+
+  def create_model(self, k, c):
+    kernel_size = (3,3)
+    pool_size = (2,2)
+    pool_strides = (2,2)
+
+    number_of_cells_limited = False
+    number_of_mac = 0
+
+    inputs = keras.Input(shape=self.input_shape)
+
+    #convolutional base
+    n = int(k)
+    multiplier = 2
+
+    #first convolutional layer
+    c_in = self.input_shape[2]
+    x = keras.layers.Conv2D(n, kernel_size, padding='same')(inputs)
+    x = keras.layers.BatchNormalization()(x)
+    x = keras.layers.ReLU()(x)
+
+    number_of_mac = number_of_mac + (c_in * kernel_size[0] * kernel_size[1] * x.shape[1] * x.shape[2] * x.shape[3])
+
+    #adding cells
+    for i in range(1, c + 1) :
+        if x.shape[1] <= 1 or x.shape[2] <= 1 :
+            number_of_cells_limited = True
+            break;
+        n = int(np.ceil(n * multiplier))
+        multiplier = multiplier - 2**-i
+        x = keras.layers.MaxPooling2D(pool_size=pool_size, strides=pool_strides, padding='valid')(x)
+        c_in = x.shape[3]
+        x = keras.layers.Conv2D(n, kernel_size, padding='same')(x)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.ReLU()(x)
+        number_of_mac = number_of_mac + (c_in * kernel_size[0] * kernel_size[1] * x.shape[1] * x.shape[2] * x.shape[3])
+    
+    # --- Fully Convolutional Classifier ---
+    current_h = x.shape[1]
+    current_w = x.shape[2]
+    c_in = x.shape[3]
+
+    # ใช้ Conv2D ที่มี Kernel Size เท่ากับขนาดภาพที่เหลืออยู่ (Global Convolution)
+    # เพื่อลดมิติจาก (H, W, C) ให้เหลือ (1, 1, num_classes)
+    x = keras.layers.Conv2D(filters=self.num_classes, 
+                            kernel_size=(current_h, current_w), 
+                            padding='valid')(x)
+    
+    # คำนวณ MAC: (Cin * K_h * K_w * 1 * 1 * Cout)
+    number_of_mac += (c_in * current_h * current_w * 1 * 1 * self.num_classes)
+
+    # บีบมิติที่เหลือ (1, 1, num_classes) ออกให้เหลือเพียง (num_classes,)
+    x = keras.layers.Reshape((self.num_classes,))(x)
+    
+    outputs = keras.layers.Softmax()(x)
+
+    model = keras.Model(inputs=inputs, outputs=outputs)
+    opt = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+    model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+    model.summary()
+    
+    return model, number_of_mac, number_of_cells_limited
