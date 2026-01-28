@@ -66,17 +66,11 @@ class ColabNAS :
             subset='validation'
         )
 
-        data_augmentation = tf.keras.Sequential([
-            tf.keras.layers.RandomFlip("horizontal"),
-            tf.keras.layers.RandomRotation(0.2, fill_mode='constant', interpolation='bilinear'),
-            #tf.keras.layers.Rescaling(1./255)
-            ])
-
         if self.cache :
-            self.train_ds = train_ds.map(lambda x, y: (data_augmentation(x, training=True), y), num_parallel_calls=tf.data.AUTOTUNE).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+            self.train_ds = train_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
             self.validation_ds = validation_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
         else :
-            self.train_ds = train_ds.map(lambda x, y: (data_augmentation(x, training=True), y), num_parallel_calls=tf.data.AUTOTUNE).prefetch(buffer_size=tf.data.AUTOTUNE)
+            self.train_ds = train_ds.prefetch(buffer_size=tf.data.AUTOTUNE)
             self.validation_ds = validation_ds.prefetch(buffer_size=tf.data.AUTOTUNE)
 
     def get_data(self):

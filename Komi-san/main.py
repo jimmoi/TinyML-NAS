@@ -34,12 +34,14 @@ def main():
             
             train_path_dir = data_dir / "train"
             test_path_dir = data_dir / "test"
-    
-            manager = Manager(train_path_dir, experiment_dir=experiment_dir, experiment_name="vanillaNAS_dense")
+
+            input_shape = (50, 50, 3)
+            
+            manager = Manager(train_path_dir, experiment_dir=experiment_dir, experiment_name="XXX", input_shape=input_shape)
             nas = manager.setup_nas()
 
             # search_output = nas.search(PSO_NAS.setup(search_space, decoder))
-            search_output = nas.search(VanillaCNN_NAS)
+            search_output = nas.search(Vanilla_NAS)
             
             test_ds = tf.keras.utils.image_dataset_from_directory(
                 directory= test_path_dir,
@@ -47,7 +49,7 @@ def main():
                 label_mode='categorical',
                 color_mode='rgb',
                 batch_size=1,
-                image_size=(50,50),
+                image_size=input_shape[:2],
                 shuffle=True
             )
 
