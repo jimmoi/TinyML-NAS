@@ -65,7 +65,7 @@ def main():
     data_dir = tf.keras.utils.get_file('flower_photos.tar', origin=dataset_url, extract=True)
     data_dir = Path(data_dir).with_suffix('')
     
-    manager = Manager(path_to_training_set=data_dir, experiment_name="vanillaNAS_CNNv2")
+    manager = Manager(path_to_training_set=data_dir, experiment_name="vanillaNAS_fullyCNN")
     nas = manager.setup_nas()
 
     # search_output = nas.search(PSO_NAS.setup(search_space, decoder))

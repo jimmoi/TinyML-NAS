@@ -174,21 +174,11 @@ class VanillaCNN_NAS(Vanilla_NAS):
         number_of_mac = number_of_mac + (c_in * kernel_size[0] * kernel_size[1] * x.shape[1] * x.shape[2] * x.shape[3])
     
     # --- Fully Convolutional Classifier ---
-    # Instead of Global Pooling, we ensure spatial dimensions are 1x1 
-    # using a final GlobalAveragePooling then expanding, or just GlobalAveragePooling
-    # To keep it "Purely Convolutional", we use a global pool followed by 1x1 convolutions
-    x = keras.layers.GlobalAveragePooling2D()(x) 
-    # Reshape to (1, 1, filters) so we can apply Conv2D
-    x = keras.layers.Reshape((1, 1, x.shape[1]))(x)
-
-    # Convolutional replacement for Dense(n)
     c_in = x.shape[3]
     x = keras.layers.Conv2D(filters=self.num_classes, kernel_size=(1, 1), padding='same')(x)
-    # x = keras.layers.ReLU()(x)
     number_of_mac += (c_in * 1 * 1 * x.shape[1] * x.shape[2] * x.shape[3])
-
-    # Flatten the (1, 1, num_classes) output to (num_classes,) for the loss function
-    x = keras.layers.Flatten()(x)
+    
+    x = keras.layers.GlobalAveragePooling2D()(x) 
     outputs = keras.layers.Softmax()(x)
 
     model = keras.Model(inputs=inputs, outputs=outputs)
