@@ -132,12 +132,10 @@ class Vanilla_NAS(ABC_NAS):
     else :
       return{'k': 'unfeasible', 'c': c, 'max_val_acc': -3}
     
-    
 class VanillaCNN_NAS(Vanilla_NAS):
   architecture_name = 'resulting_architecture'
   def __init__(self, evaluate_model_fnc, input_shape, num_classes, learning_rate):
     super().__init__(evaluate_model_fnc, input_shape, num_classes, learning_rate)
-    self.model_count = 0
 
   def create_model(self, k, c):
     kernel_size = (3,3)
@@ -174,32 +172,8 @@ class VanillaCNN_NAS(Vanilla_NAS):
         x = keras.layers.BatchNormalization()(x)
         x = keras.layers.ReLU()(x)
         number_of_mac = number_of_mac + (c_in * kernel_size[0] * kernel_size[1] * x.shape[1] * x.shape[2] * x.shape[3])
-
-    # #classifier
-    # x = keras.layers.GlobalAveragePooling2D()(x)
-    # input_shape = x.shape[1]
-    # x = keras.layers.Dense(n)(x)
-    # x = keras.layers.BatchNormalization()(x)
-    # x = keras.layers.ReLU()(x)
-    # number_of_mac = number_of_mac + (input_shape * x.shape[1])
-    # x = keras.layers.Dense(self.num_classes)(x)
-    # x = keras.layers.BatchNormalization()(x)
-    # outputs = keras.layers.Softmax()(x)
-    # number_of_mac = number_of_mac + (x.shape[1] * outputs.shape[1])
-
-    # model = keras.Model(inputs=inputs, outputs=outputs)
-
-    # opt = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-    # model.compile(optimizer=opt,
-    #         loss='categorical_crossentropy',
-    #         metrics=['accuracy'])
-
-    # model.summary()
     
-    
-    
-    
-# --- Fully Convolutional Classifier ---
+    # --- Fully Convolutional Classifier ---
     # Instead of Global Pooling, we ensure spatial dimensions are 1x1 
     # using a final GlobalAveragePooling then expanding, or just GlobalAveragePooling
     # To keep it "Purely Convolutional", we use a global pool followed by 1x1 convolutions

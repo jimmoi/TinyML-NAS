@@ -29,6 +29,8 @@ class ColabNAS :
         self.path_to_trained_models.mkdir(parents=True, exist_ok=True)
 
         self.path_to_stm32tflm = Path(path_to_stm32tflm)
+        self.train_ds = None
+        self.validation_ds = None
 
         self.load_training_set()
 
@@ -139,7 +141,10 @@ class ColabNAS :
             str(self.path_to_trained_models / f"{model_name}.h5"), monitor='val_accuracy',
             verbose=1, save_best_only=True, save_weights_only=False, mode='auto')
         #One epoch of training must be done before quantization, which is needed to evaluate RAM and Flash occupancy
-        model.fit(self.train_ds, epochs=1, validation_data=self.validation_ds, validation_freq=1)
+        model.fit(self.train_ds, 
+                  epochs=1, 
+                  validation_data=self.validation_ds, 
+                  validation_freq=1)
         model.save(self.path_to_trained_models / f"{model_name}.h5")
         Flash, RAM = self.evaluate_flash_and_peak_RAM_occupancy(model_name)
         print(f"\nRAM: {RAM},\t Flash: {Flash},\t MACC: {MACC}\n")
@@ -167,11 +172,12 @@ class ColabNAS :
         search_output = {
             "time":None,
             "iterations_accuracy":None,
-            "best_RAM":None,
-            "best_Flash":None,
-            "best_MACC":None,
-            "best_accuracy":None,
-            "best_architecture":None,
+            "RAM":None,
+            "Flash":None,
+            "MACC":None,
+            "val_accuracy":None,
+            "decision_variables":None,
+            "model_architecture":None,
             "path_to_best_architecture":None,
             "val_losses":None,
             "train_losses":None,
@@ -193,19 +199,18 @@ class ColabNAS :
             shutil.rmtree(self.path_to_trained_models)
             print(f"\nResulting architecture: {resulting_architecture_dict}\n")\
                 
-            search_output = {
-                "time":str(take_time),
-                "iterations_accuracy":iterations_accuracy,
-                "best_RAM":resulting_architecture_dict['RAM'],
-                "best_Flash":resulting_architecture_dict['Flash'],
-                "best_MACC":resulting_architecture_dict['MACC'],
-                "best_accuracy":resulting_architecture_dict['max_val_acc'],
-                "best_architecture":{'k':resulting_architecture_dict['k'], 'c':resulting_architecture_dict['c']},
-                "model_architecture":resulting_architecture_dict['model_architecture'],
-                "path_to_best_architecture":str(path_to_resulting_architecture),
-                "val_losses": resulting_architecture_dict['final_val_loss'],
-                "train_losses": resulting_architecture_dict['final_train_loss']
-            }
+                
+            search_output["time"] = str(take_time)
+            search_output["iterations_accuracy"] = iterations_accuracy
+            search_output["RAM"] = resulting_architecture_dict['RAM']
+            search_output["Flash"] = resulting_architecture_dict['Flash']
+            search_output["MACC"] = resulting_architecture_dict['MACC']
+            search_output["val_accuracy"] = resulting_architecture_dict['max_val_acc']
+            search_output["decision_variables"] = {'k':resulting_architecture_dict['k'], 'c':resulting_architecture_dict['c']}
+            search_output["model_architecture"] = resulting_architecture_dict['model_architecture']
+            search_output["path_to_best_architecture"] = str(path_to_resulting_architecture)
+            search_output["val_losses"] = resulting_architecture_dict['final_val_loss']
+            search_output["train_losses"] = resulting_architecture_dict['final_train_loss']
             
             return search_output
         else :

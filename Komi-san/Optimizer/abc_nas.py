@@ -8,7 +8,6 @@ class ABC_NAS(abc.ABC):
         self.learning_rate = learning_rate
         self.model_name = ""
         self.iterations_accuracy = []
-        self.losses_lits = []
     @abc.abstractmethod
     def search(self):
         pass

@@ -7,6 +7,7 @@ from Optimizer import *
 import sys
 import json
 import pickle
+import matplotlib.pyplot as plt
 
 
 # search_space = ArchitectureSearchSpace(k_range=(2, 10), c_range=(1, 5))
@@ -43,6 +44,9 @@ def test_tflite_model(path_to_resulting_architecture, test_ds):
             else :
                 wrong = wrong + 1
     print(f"\nTflite model test accuracy: {correct/(correct+wrong)}")
+    
+    return correct/(correct+wrong)    
+    
 
 def main():
     
@@ -64,26 +68,21 @@ def main():
     manager = Manager(path_to_training_set=data_dir, experiment_name="vanillaNAS_CNNv2")
     nas = manager.setup_nas()
 
-    #search
-    search_space = ArchitectureSearchSpace(k_range=(2, 10), c_range=(1, 5))
-    decoder = ModelDecoder2()
     # search_output = nas.search(PSO_NAS.setup(search_space, decoder))
     search_output = nas.search(VanillaCNN_NAS)
     
+    _, test_ds = nas.get_data()
+    tflite_accuracy = test_tflite_model(search_output['path_to_best_architecture'], test_ds)
+    search_output["tflite_accuracy"] = np.round(tflite_accuracy, 4)
     
+    manager.visualize(search_output)
     
     try:
-        with open(manager.experiment_dir / "search_output.json", "w") as f:
-            json.dump(search_output, f, indent=4)
+        with open(manager.experiment_dir / "search_output.pkl", "wb") as f:
+            pickle.dump(search_output, f)
     except Exception as e:
-        try:
-            with open(manager.experiment_dir / "search_output.pkl", "wb") as f:
-                pickle.dump(search_output, f)
-        except Exception as e:
-            print(f"Error: {e}")
+        print(f"Error: {e}")
     
-    _, test_ds = nas.get_data()
-    test_tflite_model(search_output['path_to_best_architecture'], test_ds)
 
 if __name__ == "__main__":
     main()
