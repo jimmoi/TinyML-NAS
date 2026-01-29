@@ -1,0 +1,54 @@
+Time: 0:03:24.583852
+
+Peak RAM: 28160
+
+Flash: 25512
+
+MACC: 470000
+
+Model Validation Accuracy: 0.806
+
+Decision Variable: {'k': 4, 'c': 1}
+
+tflite Validation Accuracy: 0.7911
+
+
+
+
+Architecture: Model: "model_1"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ input_2 (InputLayer)        [(None, 50, 50, 3)]       0         
+                                                                 
+ conv2d_2 (Conv2D)           (None, 50, 50, 4)         112       
+                                                                 
+ batch_normalization_1 (Batc  (None, 50, 50, 4)        16        
+ hNormalization)                                                 
+                                                                 
+ re_lu_1 (ReLU)              (None, 50, 50, 4)         0         
+                                                                 
+ max_pooling2d (MaxPooling2D  (None, 25, 25, 4)        0         
+ )                                                               
+                                                                 
+ conv2d_3 (Conv2D)           (None, 25, 25, 8)         296       
+                                                                 
+ batch_normalization_2 (Batc  (None, 25, 25, 8)        32        
+ hNormalization)                                                 
+                                                                 
+ re_lu_2 (ReLU)              (None, 25, 25, 8)         0         
+                                                                 
+ conv2d_4 (Conv2D)           (None, 1, 1, 4)           20004     
+                                                                 
+ reshape_1 (Reshape)         (None, 4)                 0         
+                                                                 
+ softmax_1 (Softmax)         (None, 4)                 0         
+                                                                 
+=================================================================
+Total params: 20,460
+Trainable params: 20,436
+Non-trainable params: 24
+_________________________________________________________________
+
+
+
