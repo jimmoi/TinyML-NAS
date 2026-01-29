@@ -28,7 +28,7 @@ def main():
     
     datasets_dir = Path("Datasets")
     for data_dir in datasets_dir.iterdir() :
-        if data_dir.is_dir() and data_dir.name == "Flowers-4" :
+        if data_dir.is_dir():
             experiment_dir = all_experiment_dir / data_dir.name
             experiment_dir.mkdir(parents=False, exist_ok=True)
             
@@ -37,11 +37,11 @@ def main():
 
             input_shape = (50, 50, 3)
             
-            manager = Manager(train_path_dir, experiment_dir=experiment_dir, experiment_name="XXX", input_shape=input_shape)
+            manager = Manager(train_path_dir, experiment_dir=experiment_dir, experiment_name="X", input_shape=input_shape)
             nas = manager.setup_nas()
 
             # search_output = nas.search(PSO_NAS.setup(search_space, decoder))
-            search_output = nas.search(Vanilla_NAS)
+            search_output = nas.search(X_NAS)
             
             test_ds = tf.keras.utils.image_dataset_from_directory(
                 directory= test_path_dir,
