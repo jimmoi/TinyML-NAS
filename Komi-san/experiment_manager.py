@@ -7,40 +7,36 @@ all_experiment_dir.mkdir(exist_ok=True)
 
 class Manager:
     def __init__(self, 
-                 path_to_training_set,
+                 train_ds,
+                 validation_ds,
+                 num_classes,
                  experiment_dir,
                  peak_RAM_upper_bound = 40960, 
                  Flash_upper_bound = 131072, 
                  MACC_upper_bound = 2730000, 
-                 val_split = 0.3, 
-                 cache = True, 
                  input_shape = (50,50,3), 
                  experiment_name = ''
                  ):
-        
-        
         self.peak_RAM_upper_bound = peak_RAM_upper_bound
         self.Flash_upper_bound = Flash_upper_bound
         self.MACC_upper_bound = MACC_upper_bound
-        self.path_to_training_set = path_to_training_set
-        self.val_split = val_split
-        self.cache = cache
+        self.train_ds = train_ds
+        self.validation_ds = validation_ds
+        self.num_classes = num_classes
         self.input_shape = input_shape
         self.experiment_name = experiment_name
         self.experiment_dir = experiment_dir
-        
         
     def create_experiment_dir(self):
         self.experiment_dir = self.experiment_dir / Path(self.experiment_name)
         try:
             self.experiment_dir.mkdir(exist_ok=False)
         except FileExistsError:
-            print(f"Experiment directory '{self.experiment_name}' already exists. Please choose a different experiment name.")
-            exit()
+            raise FileExistsError(f"Experiment directory '{self.experiment_dir}' already exists. Please choose a different experiment name.")
         
     def setup_nas(self):
         self.create_experiment_dir()
-        nas = ColabNAS(self.peak_RAM_upper_bound, self.Flash_upper_bound, self.MACC_upper_bound, self.path_to_training_set, self.val_split, cache=self.cache, input_shape=self.input_shape, save_path=self.experiment_dir)
+        nas = ColabNAS(self.peak_RAM_upper_bound, self.Flash_upper_bound, self.MACC_upper_bound, self.train_ds, self.validation_ds, self.num_classes, self.input_shape, self.experiment_dir)
         return nas
     
     def visualize(self, search_output):

@@ -10,18 +10,28 @@ import io
 
 class ColabNAS :
     architecture_name = 'resulting_architecture'
-    def __init__(self, max_RAM, max_Flash, max_MACC, path_to_training_set, val_split, input_shape, cache=False, save_path='.', path_to_stm32tflm='stm32tflm.exe') :
+    def __init__(
+        self, 
+        max_RAM, 
+        max_Flash, 
+        max_MACC, 
+        train_ds,
+        validation_ds,
+        num_classes,
+        input_shape, 
+        save_path='.', 
+        path_to_stm32tflm='stm32tflm.exe'
+        ) :
+        
         self.learning_rate = 1e-3
-        self.batch_size = 128
         self.epochs = 100 #minimum 2
 
         self.max_MACC = max_MACC
         self.max_Flash = max_Flash
         self.max_RAM = max_RAM
-        self.path_to_training_set = path_to_training_set
-        self.num_classes = len(next(os.walk(path_to_training_set))[1])
-        self.val_split = val_split
-        self.cache = cache
+        self.train_ds = train_ds
+        self.validation_ds = validation_ds
+        self.num_classes = num_classes
         self.input_shape = input_shape
         self.save_path = Path(save_path)
 
@@ -29,49 +39,6 @@ class ColabNAS :
         self.path_to_trained_models.mkdir(parents=True, exist_ok=True)
 
         self.path_to_stm32tflm = Path(path_to_stm32tflm)
-        self.train_ds = None
-        self.validation_ds = None
-
-        self.load_training_set()
-
-    def load_training_set(self):
-        if 3 == self.input_shape[2] :
-            color_mode = 'rgb'
-        elif 1 == self.input_shape[2] :
-            color_mode = 'grayscale'
-
-        train_ds = tf.keras.utils.image_dataset_from_directory(
-            directory= self.path_to_training_set,
-            labels='inferred',
-            label_mode='categorical',
-            color_mode=color_mode,
-            batch_size=self.batch_size,
-            image_size=self.input_shape[0:2],
-            shuffle=True,
-            seed=11,
-            validation_split=self.val_split,
-            subset='training'
-        )
-
-        validation_ds = tf.keras.utils.image_dataset_from_directory(
-            directory= self.path_to_training_set,
-            labels='inferred',
-            label_mode='categorical',
-            color_mode=color_mode,
-            batch_size=self.batch_size,
-            image_size=self.input_shape[0:2],
-            shuffle=True,
-            seed=11,
-            validation_split=self.val_split,
-            subset='validation'
-        )
-
-        if self.cache :
-            self.train_ds = train_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
-            self.validation_ds = validation_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
-        else :
-            self.train_ds = train_ds.prefetch(buffer_size=tf.data.AUTOTUNE)
-            self.validation_ds = validation_ds.prefetch(buffer_size=tf.data.AUTOTUNE)
 
     def get_data(self):
         return self.train_ds, self.validation_ds

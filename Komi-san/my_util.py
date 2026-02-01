@@ -24,53 +24,173 @@ def split_dataset(path_to_dataset, test_split=0.2) :
 
         os.rmdir(directory.path)
 
-def load_dataset(path_to_training_set, path_to_test_set, batch_size, validation_split, input_shape) :
-    num_classes = len(next(os.walk(path_to_training_set))[1])
-
+def load_train_dataset(input_shape, path_to_training_set, val_split, batch_size, cache):
+    color_mode = 'rgb' if input_shape[2] == 3 else 'grayscale'
+    
+    # 1. Load raw data
     train_ds = tf.keras.utils.image_dataset_from_directory(
-        directory= path_to_training_set,
+        directory=path_to_training_set,
         labels='inferred',
         label_mode='categorical',
-        color_mode='rgb',
-        batch_size= batch_size,
-        image_size=(input_shape[0], input_shape[1]),
+        color_mode=color_mode,
+        batch_size=batch_size,
+        image_size=input_shape[0:2],
         shuffle=True,
         seed=11,
-        validation_split=validation_split,
-        subset='training'
+        validation_split=val_split,
+        subset='training',
     )
 
     validation_ds = tf.keras.utils.image_dataset_from_directory(
-        directory= path_to_training_set,
+        directory=path_to_training_set,
         labels='inferred',
         label_mode='categorical',
-        color_mode='rgb',
-        batch_size= batch_size,
-        image_size=(input_shape[0], input_shape[1]),
+        color_mode=color_mode,
+        batch_size=batch_size,
+        image_size=input_shape[0:2],
         shuffle=True,
         seed=11,
-        validation_split=validation_split,
-        subset='validation'
+        validation_split=val_split,
+        subset='validation',
     )
 
-    test_ds = tf.keras.utils.image_dataset_from_directory(
-        directory= path_to_test_set,
+    if cache:
+        train_ds = train_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+        validation_ds = validation_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+    
+    return train_ds, validation_ds
+
+def load_train_dataset_mobilenet(input_shape, path_to_training_set, val_split, batch_size, cache):
+    def get_augmentation_layer():
+        return tf.keras.Sequential([
+            # MobileNetV2 expects pixels in range [-1, 1]
+            # This layer converts 0-255 to -1 to 1 automatically
+            tf.keras.layers.Rescaling(1./127.5, offset=-1), 
+            tf.keras.layers.RandomFlip("horizontal"),
+            tf.keras.layers.RandomRotation(0.1),
+            tf.keras.layers.RandomZoom(0.1),
+        ])
+
+    color_mode = 'rgb' if input_shape[2] == 3 else 'grayscale'
+
+    # 1. Load raw data
+    train_ds = tf.keras.utils.image_dataset_from_directory(
+        directory=path_to_training_set,
         labels='inferred',
         label_mode='categorical',
-        color_mode='rgb',
-        batch_size= batch_size,
-        image_size=(input_shape[0], input_shape[1]),
+        color_mode=color_mode,
+        batch_size=batch_size,
+        image_size=input_shape[0:2],
         shuffle=True,
-        seed=11
+        seed=11,
+        validation_split=val_split,
+        subset='training',
     )
 
-    AUTOTUNE = tf.data.AUTOTUNE
+    validation_ds = tf.keras.utils.image_dataset_from_directory(
+        directory=path_to_training_set,
+        labels='inferred',
+        label_mode='categorical',
+        color_mode=color_mode,
+        batch_size=batch_size,
+        image_size=input_shape[0:2],
+        shuffle=True,
+        seed=11,
+        validation_split=val_split,
+        subset='validation',
+    )
 
-    train_ds = train_ds.cache().prefetch(buffer_size=AUTOTUNE)
-    validation_ds = validation_ds.cache().prefetch(buffer_size=AUTOTUNE)
-    test_ds = test_ds.prefetch(buffer_size=AUTOTUNE)
+    # 2. Add Rescaling to Validation too! 
+    # (Validation doesn't get RandomFlip, but it MUST be rescaled to [-1, 1])
+    rescale_layer = tf.keras.layers.Rescaling(1./127.5, offset=-1)
+    validation_ds = validation_ds.map(lambda x, y: (rescale_layer(x), y))
 
-    return train_ds, validation_ds, test_ds, num_classes
+    # 3. Add Augmentation + Rescaling to Training
+    data_augmentation = get_augmentation_layer()
+    train_ds = train_ds.map(
+        lambda x, y: (data_augmentation(x, training=True), y),
+        num_parallel_calls=tf.data.AUTOTUNE
+    )
+
+    if cache:
+        train_ds = train_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+        validation_ds = validation_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+    
+    return train_ds, validation_ds
+
+def load_train_dataset_efficientnet(input_shape, path_to_training_set, val_split, batch_size, cache):
+    # EfficientNet handles rescaling internally, 
+    # so we ONLY do the geometric augmentations.
+    def get_augmentation_layer():
+        return tf.keras.Sequential([
+            tf.keras.layers.RandomFlip("horizontal"),
+            tf.keras.layers.RandomRotation(0.15),
+            tf.keras.layers.RandomZoom(0.15),
+        ])
+
+    color_mode = 'rgb' if input_shape[2] == 3 else 'grayscale'
+
+    # 1. Load raw data
+    train_ds = tf.keras.utils.image_dataset_from_directory(
+        directory=path_to_training_set,
+        labels='inferred',
+        label_mode='categorical',
+        color_mode=color_mode,
+        batch_size=batch_size,
+        image_size=input_shape[0:2],
+        shuffle=True,
+        seed=11,
+        validation_split=val_split,
+        subset='training',
+    )
+
+    validation_ds = tf.keras.utils.image_dataset_from_directory(
+        directory=path_to_training_set,
+        labels='inferred',
+        label_mode='categorical',
+        color_mode=color_mode,
+        batch_size=batch_size,
+        image_size=input_shape[0:2],
+        shuffle=True,
+        seed=11,
+        validation_split=val_split,
+        subset='validation',
+    )
+    
+
+    # 3. Add Augmentation + Rescaling to Training
+    data_augmentation = get_augmentation_layer()
+    train_ds = train_ds.map(
+        lambda x, y: (data_augmentation(x, training=True), y),
+        num_parallel_calls=tf.data.AUTOTUNE
+    )
+
+    if cache:
+        train_ds = train_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+        validation_ds = validation_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+    
+    return train_ds, validation_ds
+
+def load_test_dataset(input_shape, path_to_test_set, batch_size, cache, data_augmentation=False) :
+    color_mode = 'rgb' if input_shape[2] == 3 else 'grayscale'
+    test_ds = tf.keras.utils.image_dataset_from_directory(
+            directory= path_to_test_set,
+            labels='inferred',
+            label_mode='categorical',
+            color_mode=color_mode,
+            batch_size=batch_size,
+            image_size=input_shape[:2],
+            shuffle=True
+        )
+    
+    if data_augmentation :
+        rescale_layer = tf.keras.layers.Rescaling(1./127.5, offset=-1)
+        test_ds = test_ds.map(lambda x, y: (rescale_layer(x), y))
+    
+    if cache:
+        test_ds = test_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+    
+    return test_ds
 
 def test_tflite_model(path_to_resulting_architecture, test_ds) :
     interpreter = tf.lite.Interpreter(path_to_resulting_architecture)
