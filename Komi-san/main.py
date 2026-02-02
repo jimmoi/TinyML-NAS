@@ -4,7 +4,7 @@ import tensorflow as tf
 from experiment_manager import Manager, all_experiment_dir
 from Optimizer import *
 from distill import *
-from my_util import load_dataset, test_tflite_model
+from my_util import load_train_dataset, test_tflite_model
 import sys
 import json
 import pickle
@@ -34,15 +34,15 @@ def main():
             
             ## load data
             num_classes = len(next(os.walk(train_path_dir))[1])
-            train_ds, validation_ds = load_dataset(input_shape, train_path_dir, val_split=0.3, batch_size=128, cache=True)
+            train_ds, validation_ds = load_train_dataset(input_shape, train_path_dir, val_split=0.3, batch_size=128, cache=True)
             
             try:
                 ## student model
-                manager = Manager(train_ds, validation_ds, num_classes, experiment_dir=experiment_dir, experiment_name="X", input_shape=input_shape)
+                manager = Manager(train_ds, validation_ds, num_classes, experiment_dir=experiment_dir, experiment_name="Jimmy_NAS", input_shape=input_shape)
                 nas = manager.setup_nas()
 
                 # search_output = nas.search(PSO_NAS.setup(search_space, decoder))
-                search_output = nas.search(X_NAS)
+                search_output = nas.search(Jimmy_NAS)
                 test_ds = tf.keras.utils.image_dataset_from_directory(
                     directory= test_path_dir,
                     labels='inferred',
