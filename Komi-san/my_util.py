@@ -171,7 +171,7 @@ def load_train_dataset_efficientnet(input_shape, path_to_training_set, val_split
     
     return train_ds, validation_ds
 
-def load_dataset_resnet(input_shape, path_to_training_set, val_split, batch_size, cache):
+def load_train_dataset_resnet(input_shape, path_to_training_set, val_split, batch_size, cache):
     
     # Define the preprocessing function for ResNet50
     # This handles the BGR conversion and mean subtraction
