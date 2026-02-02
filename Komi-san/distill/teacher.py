@@ -102,3 +102,33 @@ def build_efficientnetb0(input_shape, num_classes):
     ])
 
     return model
+
+def build_resnet50(input_shape, num_classes):
+    """
+    Builds a ResNet-50 model pre-trained on ImageNet.
+    """
+    # 1. Load the base model
+    # We use ResNet50 because it's a standard, powerful architecture.
+    # include_top=False means we remove the original 1000-class ImageNet classifier.
+    base_model = tf.keras.applications.ResNet50(
+        input_shape=input_shape,
+        include_top=False,  # We will add our own classifier
+        weights='imagenet'  # Use weights pre-trained on ImageNet
+    )
+
+    # 2. Freeze the base model
+    # We don't want to destroy the learned features from ImageNet during the initial training.
+    base_model.trainable = False
+
+    # 3. Build the new model
+    model = models.Sequential([
+        base_model,
+        # Add a Global Average Pooling layer to reduce dimensions
+        layers.GlobalAveragePooling2D(),
+        # Add a Dropout layer to prevent overfitting
+        layers.Dropout(0.3),
+        # Add the final classification layer for our specific number of classes
+        layers.Dense(num_classes, activation='softmax')
+    ])
+
+    return model

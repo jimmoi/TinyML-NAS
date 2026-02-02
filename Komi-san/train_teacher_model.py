@@ -31,8 +31,14 @@ def main():
             
             ## load data
             num_classes = len(next(os.walk(train_path_dir))[1])
-            train_ds, validation_ds = load_train_dataset_efficientnet(input_shape, train_path_dir, val_split=0.3, batch_size=128, cache=True)
+            
+            ### <--- change dataset loader right here --->
+            train_ds, validation_ds = load_train_dataset(input_shape, train_path_dir, val_split=0.3, batch_size=128, cache=True)
+            # train_ds, validation_ds = load_train_dataset_efficientnet(input_shape, train_path_dir, val_split=0.3, batch_size=128, cache=True)
+            # train_ds, validation_ds = load_train_dataset_mobilenet(input_shape, train_path_dir, val_split=0.3, batch_size=128, cache=True)
+            
             test_ds = load_test_dataset(input_shape, test_path_dir, batch_size=1, cache=True)
+            # test_ds = load_test_dataset(input_shape, test_path_dir, batch_size=1, cache=True, data_augmentation=True)
             
             checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
                 filepath=str(checkpoint_path),
@@ -57,11 +63,17 @@ def main():
             )
             
             ## teacher model
-            # model = build_wide_resnet(input_shape, depth=4, k=8, num_classes=num_classes)
-            model = build_efficientnetb0(input_shape, num_classes)
+            
+            ### <--- change teacher model right here --->
+            model = build_wide_resnet(input_shape, depth=4, k=8, num_classes=num_classes) 
+            # model = build_efficientnetb0(input_shape, num_classes)
+            # model = build_mobilenetv2(input_shape, num_classes)
+            # model = build_resnet50(input_shape, num_classes)
+            
             optimizer = tf.keras.optimizers.Adam(learning_rate=0.0001)
             model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
             model.summary()
+            model.load_weights(str(checkpoint_path))
             hist = model.fit(
                 train_ds, 
                 epochs=epochs, 
