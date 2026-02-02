@@ -171,7 +171,65 @@ def load_train_dataset_efficientnet(input_shape, path_to_training_set, val_split
     
     return train_ds, validation_ds
 
-def load_test_dataset(input_shape, path_to_test_set, batch_size, cache, data_augmentation=False) :
+def load_dataset_resnet(input_shape, path_to_training_set, val_split, batch_size, cache):
+    
+    # Define the preprocessing function for ResNet50
+    # This handles the BGR conversion and mean subtraction
+    def preprocess_resnet(image, label):
+        image = tf.keras.applications.resnet50.preprocess_input(image)
+        return image, label
+
+    def get_augmentation_layer():
+        return tf.keras.Sequential([
+            tf.keras.layers.RandomFlip("horizontal"),
+            tf.keras.layers.RandomRotation(0.1),
+            tf.keras.layers.RandomZoom(0.1),
+        ])
+
+    color_mode = 'rgb' if input_shape[2] == 3 else 'grayscale'
+
+    # 1. Load raw data (pixels are 0-255 here)
+    train_ds = tf.keras.utils.image_dataset_from_directory(
+        directory=path_to_training_set,
+        labels='inferred',
+        label_mode='categorical',
+        image_size=input_shape[0:2],
+        batch_size=batch_size,
+        seed=11,
+        validation_split=val_split,
+        subset='training',
+    )
+
+    validation_ds = tf.keras.utils.image_dataset_from_directory(
+        directory=path_to_training_set,
+        labels='inferred',
+        label_mode='categorical',
+        image_size=input_shape[0:2],
+        batch_size=batch_size,
+        seed=11,
+        validation_split=val_split,
+        subset='validation',
+    )
+
+    # 2. Apply ResNet50 Preprocessing to Validation
+    validation_ds = validation_ds.map(preprocess_resnet, num_parallel_calls=tf.data.AUTOTUNE)
+
+    # 3. Apply Augmentation THEN ResNet50 Preprocessing to Training
+    data_augmentation = get_augmentation_layer()
+    train_ds = train_ds.map(
+        lambda x, y: (data_augmentation(x, training=True), y),
+        num_parallel_calls=tf.data.AUTOTUNE
+    )
+    # Final step: Preprocess the augmented images
+    train_ds = train_ds.map(preprocess_resnet, num_parallel_calls=tf.data.AUTOTUNE)
+
+    if cache:
+        train_ds = train_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+        validation_ds = validation_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+    
+    return train_ds, validation_ds
+
+def load_test_dataset(input_shape, path_to_test_set, batch_size, cache) :
     color_mode = 'rgb' if input_shape[2] == 3 else 'grayscale'
     test_ds = tf.keras.utils.image_dataset_from_directory(
             directory= path_to_test_set,
@@ -183,9 +241,52 @@ def load_test_dataset(input_shape, path_to_test_set, batch_size, cache, data_aug
             shuffle=True
         )
     
-    if data_augmentation :
-        rescale_layer = tf.keras.layers.Rescaling(1./127.5, offset=-1)
-        test_ds = test_ds.map(lambda x, y: (rescale_layer(x), y))
+    if cache:
+        test_ds = test_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+    
+    return test_ds
+
+def load_test_dataset_mobilenet(input_shape, path_to_test_set, batch_size, cache) :
+    color_mode = 'rgb' if input_shape[2] == 3 else 'grayscale'
+    test_ds = tf.keras.utils.image_dataset_from_directory(
+            directory= path_to_test_set,
+            labels='inferred',
+            label_mode='categorical',
+            color_mode=color_mode,
+            batch_size=batch_size,
+            image_size=input_shape[:2],
+            shuffle=True
+        )
+    
+    rescale_layer = tf.keras.layers.Rescaling(1./127.5, offset=-1)
+    test_ds = test_ds.map(lambda x, y: (rescale_layer(x), y))
+    
+    if cache:
+        test_ds = test_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+    
+    return test_ds
+
+def load_test_dataset_resnet(input_shape, path_to_test_set, batch_size, cache):
+    # 1. Define the specific ResNet50 preprocessing
+    def preprocess_resnet(image, label):
+        image = tf.keras.applications.resnet50.preprocess_input(image)
+        return image, label
+
+    color_mode = 'rgb' if input_shape[2] == 3 else 'grayscale'
+    
+    # 2. Load raw data
+    test_ds = tf.keras.utils.image_dataset_from_directory(
+            directory=path_to_test_set,
+            labels='inferred',
+            label_mode='categorical',
+            color_mode=color_mode,
+            batch_size=batch_size,
+            image_size=input_shape[:2],
+            shuffle=False # Usually False for testing/evaluation
+        )
+    
+    # 3. Apply ResNet50 Preprocessing
+    test_ds = test_ds.map(preprocess_resnet, num_parallel_calls=tf.data.AUTOTUNE)
     
     if cache:
         test_ds = test_ds.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
