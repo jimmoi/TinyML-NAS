@@ -90,15 +90,24 @@ def main():
             ## save teacher knowledge
             if test_acc > 0.9:
                 model.save(experiment_dir / f"teacher_model_{epochs}.h5")
-                save_teacher_knowledge(model, train_ds, experiment_dir / f"teacher_knowledge_train_{epochs}.npz")
-                save_teacher_knowledge(model, test_ds, experiment_dir / f"teacher_knowledge_test_{epochs}.npz")
+                # save_teacher_knowledge(model, train_ds, experiment_dir / f"teacher_knowledge_train_{epochs}.npz")
+                # save_teacher_knowledge(model, test_ds, experiment_dir / f"teacher_knowledge_test_{epochs}.npz")
 
                 ## save history
                 with open(experiment_dir / f"history_{epochs}.pkl", "wb") as f:
                     pickle.dump(hist.history, f)
+                    
+                with open(experiment_dir / f"improved_performance.txt", "w") as f:
+                    f.write(f"Test accuracy: {test_acc}\n")
+                    f.write(f"Test loss: {test_loss}\n")
+                    
             else:
                 print(f"Test accuracy: {test_acc} is not enough to save teacher knowledge")
                 print("Stupid Fucking Human")
+                
+                with open(experiment_dir / f"performance.txt", "w") as f:
+                    f.write(f"Test accuracy: {test_acc}\n")
+                    f.write(f"Test loss: {test_loss}\n")
 
 
 if __name__ == "__main__":
