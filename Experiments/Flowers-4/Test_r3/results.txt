@@ -1,0 +1,74 @@
+Time: 0:05:57.780219
+
+Peak RAM: 29696
+
+Flash: 10776
+
+MACC: 506104
+
+Model Validation Accuracy: 0.89
+
+Decision Variable: {'k': 8, 'c': 1}
+
+tflite Validation Accuracy: 0.8771
+
+
+
+
+Architecture: Model: "model_4"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ input_5 (InputLayer)        [(None, 50, 50, 3)]       0         
+                                                                 
+ conv2d_14 (Conv2D)          (None, 25, 25, 8)         216       
+                                                                 
+ batch_normalization_17 (Bat  (None, 25, 25, 8)        32        
+ chNormalization)                                                
+                                                                 
+ re_lu_14 (ReLU)             (None, 25, 25, 8)         0         
+                                                                 
+ conv2d_15 (Conv2D)          (None, 25, 25, 32)        256       
+                                                                 
+ batch_normalization_18 (Bat  (None, 25, 25, 32)       128       
+ chNormalization)                                                
+                                                                 
+ re_lu_15 (ReLU)             (None, 25, 25, 32)        0         
+                                                                 
+ depthwise_conv2d_3 (Depthwi  (None, 13, 13, 32)       288       
+ seConv2D)                                                       
+                                                                 
+ batch_normalization_19 (Bat  (None, 13, 13, 32)       128       
+ chNormalization)                                                
+                                                                 
+ re_lu_16 (ReLU)             (None, 13, 13, 32)        0         
+                                                                 
+ conv2d_16 (Conv2D)          (None, 13, 13, 12)        384       
+                                                                 
+ batch_normalization_20 (Bat  (None, 13, 13, 12)       48        
+ chNormalization)                                                
+                                                                 
+ conv2d_17 (Conv2D)          (None, 13, 13, 48)        576       
+                                                                 
+ batch_normalization_21 (Bat  (None, 13, 13, 48)       192       
+ chNormalization)                                                
+                                                                 
+ re_lu_17 (ReLU)             (None, 13, 13, 48)        0         
+                                                                 
+ global_average_pooling2d_4   (None, 48)               0         
+ (GlobalAveragePooling2D)                                        
+                                                                 
+ dropout_4 (Dropout)         (None, 48)                0         
+                                                                 
+ dense_4 (Dense)             (None, 4)                 196       
+                                                                 
+ softmax_4 (Softmax)         (None, 4)                 0         
+                                                                 
+=================================================================
+Total params: 2,444
+Trainable params: 2,180
+Non-trainable params: 264
+_________________________________________________________________
+
+
+

@@ -1,16 +1,16 @@
-Time: 0:13:42.798246
+Time: 0:04:05.931225
 
 Peak RAM: 22528
 
-Flash: 6784
+Flash: 7744
 
-MACC: 188364
+MACC: 350604
 
-Model Validation Accuracy: 0.797
+Model Validation Accuracy: 0.853
 
 Decision Variable: {'k': 4, 'c': 1}
 
-tflite Validation Accuracy: 0.8019
+tflite Validation Accuracy: 0.8675
 
 
 
@@ -35,7 +35,7 @@ _________________________________________________________________
                                                                  
  re_lu_2 (ReLU)              (None, 25, 25, 24)        0         
                                                                  
- depthwise_conv2d (Depthwise  (None, 13, 13, 24)       216       
+ depthwise_conv2d (Depthwise  (None, 13, 13, 24)       1176      
  Conv2D)                                                         
                                                                  
  batch_normalization_3 (Batc  (None, 13, 13, 24)       96        
@@ -56,8 +56,8 @@ _________________________________________________________________
  softmax_1 (Softmax)         (None, 4)                 0         
                                                                  
 =================================================================
-Total params: 824
-Trainable params: 708
+Total params: 1,784
+Trainable params: 1,668
 Non-trainable params: 116
 _________________________________________________________________
 

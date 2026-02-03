@@ -1,0 +1,98 @@
+Time: 0:08:35.668078
+
+Peak RAM: 25088
+
+Flash: 13072
+
+MACC: 445888
+
+Model Validation Accuracy: 0.885
+
+Decision Variable: {'k': 4, 'c': 2}
+
+tflite Validation Accuracy: 0.8711
+
+
+
+
+Architecture: Model: "model_2"
+__________________________________________________________________________________________________
+ Layer (type)                   Output Shape         Param #     Connected to                     
+==================================================================================================
+ input_3 (InputLayer)           [(None, 50, 50, 3)]  0           []                               
+                                                                                                  
+ conv2d_6 (Conv2D)              (None, 25, 25, 4)    108         ['input_3[0][0]']                
+                                                                                                  
+ batch_normalization_7 (BatchNo  (None, 25, 25, 4)   16          ['conv2d_6[0][0]']               
+ rmalization)                                                                                     
+                                                                                                  
+ re_lu_6 (ReLU)                 (None, 25, 25, 4)    0           ['batch_normalization_7[0][0]']  
+                                                                                                  
+ conv2d_7 (Conv2D)              (None, 25, 25, 12)   48          ['re_lu_6[0][0]']                
+                                                                                                  
+ batch_normalization_8 (BatchNo  (None, 25, 25, 12)  48          ['conv2d_7[0][0]']               
+ rmalization)                                                                                     
+                                                                                                  
+ re_lu_7 (ReLU)                 (None, 25, 25, 12)   0           ['batch_normalization_8[0][0]']  
+                                                                                                  
+ depthwise_conv2d_1 (DepthwiseC  (None, 25, 25, 12)  108         ['re_lu_7[0][0]']                
+ onv2D)                                                                                           
+                                                                                                  
+ batch_normalization_9 (BatchNo  (None, 25, 25, 12)  48          ['depthwise_conv2d_1[0][0]']     
+ rmalization)                                                                                     
+                                                                                                  
+ re_lu_8 (ReLU)                 (None, 25, 25, 12)   0           ['batch_normalization_9[0][0]']  
+                                                                                                  
+ conv2d_8 (Conv2D)              (None, 25, 25, 4)    48          ['re_lu_8[0][0]']                
+                                                                                                  
+ batch_normalization_10 (BatchN  (None, 25, 25, 4)   16          ['conv2d_8[0][0]']               
+ ormalization)                                                                                    
+                                                                                                  
+ add_1 (Add)                    (None, 25, 25, 4)    0           ['re_lu_6[0][0]',                
+                                                                  'batch_normalization_10[0][0]'] 
+                                                                                                  
+ conv2d_9 (Conv2D)              (None, 25, 25, 24)   96          ['add_1[0][0]']                  
+                                                                                                  
+ batch_normalization_11 (BatchN  (None, 25, 25, 24)  96          ['conv2d_9[0][0]']               
+ ormalization)                                                                                    
+                                                                                                  
+ re_lu_9 (ReLU)                 (None, 25, 25, 24)   0           ['batch_normalization_11[0][0]'] 
+                                                                                                  
+ depthwise_conv2d_2 (DepthwiseC  (None, 13, 13, 24)  600         ['re_lu_9[0][0]']                
+ onv2D)                                                                                           
+                                                                                                  
+ batch_normalization_12 (BatchN  (None, 13, 13, 24)  96          ['depthwise_conv2d_2[0][0]']     
+ ormalization)                                                                                    
+                                                                                                  
+ re_lu_10 (ReLU)                (None, 13, 13, 24)   0           ['batch_normalization_12[0][0]'] 
+                                                                                                  
+ conv2d_10 (Conv2D)             (None, 13, 13, 6)    144         ['re_lu_10[0][0]']               
+                                                                                                  
+ batch_normalization_13 (BatchN  (None, 13, 13, 6)   24          ['conv2d_10[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ conv2d_11 (Conv2D)             (None, 13, 13, 64)   384         ['batch_normalization_13[0][0]'] 
+                                                                                                  
+ batch_normalization_14 (BatchN  (None, 13, 13, 64)  256         ['conv2d_11[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ re_lu_11 (ReLU)                (None, 13, 13, 64)   0           ['batch_normalization_14[0][0]'] 
+                                                                                                  
+ global_average_pooling2d_2 (Gl  (None, 64)          0           ['re_lu_11[0][0]']               
+ obalAveragePooling2D)                                                                            
+                                                                                                  
+ dropout_2 (Dropout)            (None, 64)           0           ['global_average_pooling2d_2[0][0
+                                                                 ]']                              
+                                                                                                  
+ dense_2 (Dense)                (None, 4)            260         ['dropout_2[0][0]']              
+                                                                                                  
+ softmax_2 (Softmax)            (None, 4)            0           ['dense_2[0][0]']                
+                                                                                                  
+==================================================================================================
+Total params: 2,396
+Trainable params: 2,096
+Non-trainable params: 300
+__________________________________________________________________________________________________
+
+
+
