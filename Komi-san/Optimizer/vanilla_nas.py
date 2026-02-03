@@ -436,3 +436,118 @@ class Real_Hyper_FullyCNN_NAS(Vanilla_NAS):
     model.summary()
     
     return model, number_of_mac, number_of_cells_limited
+
+class Mametoyas_TinyCNNNASS(Vanilla_NAS):
+
+    architecture_name = 'resulting_architecture'
+
+    def __init__(self, evaluate_model_fnc, input_shape, num_classes, learning_rate):
+        super().__init__(evaluate_model_fnc, input_shape, num_classes, learning_rate)
+
+    def create_model(self, k, c):
+
+        kernel_size = (3, 3)
+        number_of_cells_limited = False
+        number_of_mac = 0
+
+        inputs = keras.Input(shape=self.input_shape)
+
+        # ===== Stem (Depthwise Separable) =====
+        n = int(k)
+        c_in = self.input_shape[2]
+
+        x = keras.layers.DepthwiseConv2D(
+            kernel_size,
+            padding='same',
+            use_bias=False
+        )(inputs)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.ReLU()(x)
+
+        # MAC depthwise
+        number_of_mac += (
+            c_in * kernel_size[0] * kernel_size[1] *
+            x.shape[1] * x.shape[2]
+        )
+
+        x = keras.layers.Conv2D(
+            n,
+            kernel_size=(1, 1),
+            padding='same',
+            use_bias=False
+        )(x)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.ReLU()(x)
+
+        # MAC pointwise
+        number_of_mac += (
+            c_in * x.shape[1] * x.shape[2] * x.shape[3]
+        )
+
+        # ===== NAS Cells =====
+        for i in range(1, c + 1):
+
+            if x.shape[1] <= 1 or x.shape[2] <= 1:
+                number_of_cells_limited = True
+                break
+
+            n = int(np.ceil(n * 1.5))   # โตช้ากว่า Vanilla
+            c_in = x.shape[3]
+
+            # Patch downsampling
+            x = keras.layers.DepthwiseConv2D(
+                kernel_size,
+                strides=2,
+                padding='same',
+                use_bias=False
+            )(x)
+            x = keras.layers.BatchNormalization()(x)
+            x = keras.layers.ReLU()(x)
+
+            number_of_mac += (
+                c_in * kernel_size[0] * kernel_size[1] *
+                x.shape[1] * x.shape[2]
+            )
+
+            x = keras.layers.Conv2D(
+                n,
+                kernel_size=(1, 1),
+                padding='same',
+                use_bias=False
+            )(x)
+            x = keras.layers.BatchNormalization()(x)
+            x = keras.layers.ReLU()(x)
+
+            number_of_mac += (
+                c_in * x.shape[1] * x.shape[2] * x.shape[3]
+            )
+
+        # ===== Ultra-light Classifier =====
+        c_in = x.shape[3]
+
+        x = keras.layers.Conv2D(
+            self.num_classes,
+            kernel_size=(1, 1),
+            padding='same',
+            use_bias=False
+        )(x)
+
+        number_of_mac += (
+            c_in * x.shape[1] * x.shape[2] * x.shape[3]
+        )
+
+        x = keras.layers.GlobalAveragePooling2D()(x)
+        outputs = keras.layers.Softmax()(x)
+
+        model = keras.Model(inputs=inputs, outputs=outputs)
+
+        opt = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+        model.compile(
+            optimizer=opt,
+            loss='categorical_crossentropy',
+            metrics=['accuracy']
+        )
+
+        model.summary()
+
+        return model, number_of_mac, number_of_cells_limited
