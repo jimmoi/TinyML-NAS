@@ -56,8 +56,6 @@ def main():
                 nas = manager.setup_nas()
 
                 search_output = nas.search(Jimmy_NAS_I)
-                
-                test_ds = prepare_nas_datasets(test_ds, patch_size=search_output["output_shape"])[0]
           
                 manager.visualize(search_output)
                 
