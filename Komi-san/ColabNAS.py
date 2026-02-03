@@ -97,6 +97,7 @@ class ColabNAS :
 
     def evaluate_model(self, model, MACC, number_of_cells_limited, model_name) :
         # Re-map the labels to match the grid
+        h, w = None, None
         if self.transform:
             # Get the output shape from your generated NAS model
             output_shape = model.output_shape # e.g., (None, 7, 7, 10)
@@ -172,8 +173,8 @@ class ColabNAS :
             shutil.rmtree(self.path_to_trained_models)
             
             if self.transform:
-                self.test_ds = self.transform(self.test_ds, patch_size=resulting_architecture_dict['output_shape'])
-            tflite_accuracy = test_tflite_model(path_to_resulting_architecture, self.test_ds)
+                self.test_ds = self.transform(self.test_ds, patch_size=resulting_architecture_dict['output_shape'])[0]
+            tflite_accuracy = test_tflite_model(str(path_to_resulting_architecture), self.test_ds)
             
             print(f"\nResulting architecture: {resulting_architecture_dict}\n")
             search_output["time"] = str(take_time)
