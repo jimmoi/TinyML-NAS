@@ -7,6 +7,7 @@ import re
 import os
 import time
 import io
+from my_util import prepare_nas_datasets
 
 class ColabNAS :
     architecture_name = 'resulting_architecture'
@@ -97,14 +98,21 @@ class ColabNAS :
         return int(Flash), int(RAM)
 
     def evaluate_model(self, model, MACC, number_of_cells_limited, model_name) :
+        # Get the output shape from your generated NAS model
+        output_shape = model.output_shape # e.g., (None, 7, 7, 10)
+        h, w = output_shape[1], output_shape[2]
+
+        # Re-map the labels to match the grid
+        train_ds_mapped, val_ds_mapped = prepare_nas_datasets(self.train_ds, self.validation_ds, patch_size=(h, w))
+        
         print(f"\n{model_name}\n")
         checkpoint = tf.keras.callbacks.ModelCheckpoint(
             str(self.path_to_trained_models / f"{model_name}.h5"), monitor='val_accuracy',
             verbose=1, save_best_only=True, save_weights_only=False, mode='auto')
         #One epoch of training must be done before quantization, which is needed to evaluate RAM and Flash occupancy
-        model.fit(self.train_ds, 
+        model.fit(train_ds_mapped, 
                   epochs=1, 
-                  validation_data=self.validation_ds, 
+                  validation_data=val_ds_mapped, 
                   validation_freq=1)
         model.save(self.path_to_trained_models / f"{model_name}.h5")
         Flash, RAM = self.evaluate_flash_and_peak_RAM_occupancy(model_name)
@@ -124,7 +132,9 @@ class ColabNAS :
                     np.around(np.amax(hist.history['val_accuracy']), decimals=3)
                     if 'hist' in locals() else -3,
                     'final_train_loss': np.around(hist.history['loss'], 6),
-                    'final_val_loss': np.around(hist.history['val_loss'], 6),}
+                    'final_val_loss': np.around(hist.history['val_loss'], 6),
+                    'output_shape': (h, w)
+                    }
         else :
             return {'max_val_acc':0}
 
@@ -142,6 +152,7 @@ class ColabNAS :
             "path_to_best_architecture":None,
             "val_losses":None,
             "train_losses":None,
+            "output_shape":None
             
         }
         
@@ -172,6 +183,7 @@ class ColabNAS :
             search_output["path_to_best_architecture"] = str(path_to_resulting_architecture)
             search_output["val_losses"] = resulting_architecture_dict['final_val_loss']
             search_output["train_losses"] = resulting_architecture_dict['final_train_loss']
+            search_output["output_shape"] = resulting_architecture_dict['output_shape']
             
             return search_output
         else :

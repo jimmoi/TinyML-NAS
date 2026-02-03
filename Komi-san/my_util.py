@@ -318,6 +318,22 @@ def test_tflite_model(path_to_resulting_architecture, test_ds) :
     print(f"\nTflite model test accuracy: {correct/(correct+wrong)}")
     return correct/(correct+wrong)
 
+def prepare_nas_datasets(*ds, patch_size):
+    target_height, target_width = patch_size
+    def transform_labels(images, labels):
+        # labels shape: (batch, num_classes)
+        # We want: (batch, target_height, target_width, num_classes)
+        
+        # 1. Add spatial dimensions: (batch, 1, 1, num_classes)
+        labels = tf.reshape(labels, (-1, 1, 1, labels.shape[-1]))
+        
+        # 2. Tile (broadcast) to the required output shape
+        labels = tf.tile(labels, [1, target_height, target_width, 1])
+        
+        return images, labels
+    
+    return [f.map(transform_labels) for f in ds]
+
 if __name__ == '__main__' :
     for dir_name in [
         "Animals-3", 

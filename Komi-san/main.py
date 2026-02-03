@@ -4,7 +4,7 @@ import tensorflow as tf
 from experiment_manager import Manager, all_experiment_dir
 from Optimizer import *
 from distill import *
-from my_util import load_train_dataset, test_tflite_model
+from my_util import load_train_dataset, test_tflite_model, prepare_nas_datasets
 import sys
 import json
 import pickle
@@ -38,11 +38,11 @@ def main():
             
             try:
                 ## student model
-                manager = Manager(train_ds, validation_ds, num_classes, experiment_dir=experiment_dir, experiment_name="Jimmy_NAS", input_shape=input_shape)
+                manager = Manager(train_ds, validation_ds, num_classes, experiment_dir=experiment_dir, experiment_name="Tiger_NAS", input_shape=input_shape)
                 nas = manager.setup_nas()
 
                 # search_output = nas.search(PSO_NAS.setup(search_space, decoder))
-                search_output = nas.search(Jimmy_NAS)
+                search_output = nas.search(Real_Hyper_FullyCNN_NAS)
                 test_ds = tf.keras.utils.image_dataset_from_directory(
                     directory= test_path_dir,
                     labels='inferred',
@@ -52,6 +52,7 @@ def main():
                     image_size=input_shape[:2],
                     shuffle=True
                 )
+                test_ds = prepare_nas_datasets(test_ds, patch_size=search_output["output_shape"])[0]
 
                 tflite_accuracy = test_tflite_model(search_output['path_to_best_architecture'], test_ds)
                 search_output["tflite_accuracy"] = round(tflite_accuracy, 4)
