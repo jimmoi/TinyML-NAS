@@ -7,7 +7,7 @@ import re
 import os
 import time
 import io
-from my_util import prepare_nas_datasets
+from my_util import test_tflite_model
 
 class ColabNAS :
     architecture_name = 'resulting_architecture'
@@ -16,10 +16,9 @@ class ColabNAS :
         max_RAM, 
         max_Flash, 
         max_MACC, 
-        train_ds,
-        validation_ds,
+        data,
         num_classes,
-        input_shape, 
+        input_shape,
         save_path='.', 
         path_to_stm32tflm='stm32tflm.exe'
         ) :
@@ -30,8 +29,10 @@ class ColabNAS :
         self.max_MACC = max_MACC
         self.max_Flash = max_Flash
         self.max_RAM = max_RAM
-        self.train_ds = train_ds
-        self.validation_ds = validation_ds
+        self.train_ds = data['train']
+        self.validation_ds = data['validation']
+        self.test_ds = data['test']
+        self.transform = data.get('transform')
         self.num_classes = num_classes
         self.input_shape = input_shape
         self.save_path = Path(save_path)
@@ -40,9 +41,6 @@ class ColabNAS :
         self.path_to_trained_models.mkdir(parents=True, exist_ok=True)
 
         self.path_to_stm32tflm = Path(path_to_stm32tflm)
-
-    def get_data(self):
-        return self.train_ds, self.validation_ds
 
     def quantize_model_uint8(self, model_name):
         def representative_dataset():
@@ -98,12 +96,15 @@ class ColabNAS :
         return int(Flash), int(RAM)
 
     def evaluate_model(self, model, MACC, number_of_cells_limited, model_name) :
-        # Get the output shape from your generated NAS model
-        output_shape = model.output_shape # e.g., (None, 7, 7, 10)
-        h, w = output_shape[1], output_shape[2]
-
         # Re-map the labels to match the grid
-        train_ds_mapped, val_ds_mapped = prepare_nas_datasets(self.train_ds, self.validation_ds, patch_size=(h, w))
+        if self.transform:
+            # Get the output shape from your generated NAS model
+            output_shape = model.output_shape # e.g., (None, 7, 7, 10)
+            h, w = output_shape[1], output_shape[2]
+            train_ds_mapped, val_ds_mapped = self.transform(self.train_ds, self.validation_ds, patch_size=(h, w))
+        else:
+            train_ds_mapped = self.train_ds
+            val_ds_mapped = self.validation_ds
         
         print(f"\n{model_name}\n")
         checkpoint = tf.keras.callbacks.ModelCheckpoint(
@@ -169,9 +170,12 @@ class ColabNAS :
             path_to_resulting_architecture = self.save_path / f"resulting_architecture_{resulting_architecture_name}"
             (self.path_to_trained_models / f"{resulting_architecture_name}").rename(path_to_resulting_architecture)
             shutil.rmtree(self.path_to_trained_models)
-            print(f"\nResulting architecture: {resulting_architecture_dict}\n")\
-                
-                
+            
+            if self.transform:
+                self.test_ds = self.transform(self.test_ds, patch_size=resulting_architecture_dict['output_shape'])
+            tflite_accuracy = test_tflite_model(path_to_resulting_architecture, self.test_ds)
+            
+            print(f"\nResulting architecture: {resulting_architecture_dict}\n")
             search_output["time"] = str(take_time)
             search_output["iterations_accuracy"] = iterations_accuracy
             search_output["RAM"] = resulting_architecture_dict['RAM']
@@ -183,7 +187,7 @@ class ColabNAS :
             search_output["path_to_best_architecture"] = str(path_to_resulting_architecture)
             search_output["val_losses"] = resulting_architecture_dict['final_val_loss']
             search_output["train_losses"] = resulting_architecture_dict['final_train_loss']
-            search_output["output_shape"] = resulting_architecture_dict['output_shape']
+            search_output["tflite_accuracy"] = round(tflite_accuracy, 4)
             
             return search_output
         else :

@@ -7,8 +7,7 @@ all_experiment_dir.mkdir(exist_ok=True)
 
 class Manager:
     def __init__(self, 
-                 train_ds,
-                 validation_ds,
+                 data,
                  num_classes,
                  experiment_dir,
                  peak_RAM_upper_bound = 40960, 
@@ -20,8 +19,7 @@ class Manager:
         self.peak_RAM_upper_bound = peak_RAM_upper_bound
         self.Flash_upper_bound = Flash_upper_bound
         self.MACC_upper_bound = MACC_upper_bound
-        self.train_ds = train_ds
-        self.validation_ds = validation_ds
+        self.data = data
         self.num_classes = num_classes
         self.input_shape = input_shape
         self.experiment_name = experiment_name
@@ -36,7 +34,7 @@ class Manager:
         
     def setup_nas(self):
         self.create_experiment_dir()
-        nas = ColabNAS(self.peak_RAM_upper_bound, self.Flash_upper_bound, self.MACC_upper_bound, self.train_ds, self.validation_ds, self.num_classes, self.input_shape, self.experiment_dir)
+        nas = ColabNAS(self.peak_RAM_upper_bound, self.Flash_upper_bound, self.MACC_upper_bound, self.data, self.num_classes, self.input_shape, self.experiment_dir)
         return nas
     
     def visualize(self, search_output):

@@ -5,6 +5,7 @@ import datetime
 from .abc_nas import ABC_NAS
 
 class Vanilla_NAS(ABC_NAS):
+  "Classifier: GAP -> dense(nc) -> dense(n_classes) -> softmax"
   architecture_name = 'resulting_architecture'
   def __init__(self, evaluate_model_fnc, input_shape, num_classes, learning_rate):
     super().__init__(evaluate_model_fnc, input_shape, num_classes, learning_rate)
@@ -132,7 +133,8 @@ class Vanilla_NAS(ABC_NAS):
     else :
       return{'k': 'unfeasible', 'c': c, 'max_val_acc': -3}
     
-class VanillaCNN_NAS(Vanilla_NAS):
+class Jimmy_NAS_I(Vanilla_NAS):
+  """Classifier: 1x1xn_classes Conv -> GAP -> Softmax"""
   architecture_name = 'resulting_architecture'
   def __init__(self, evaluate_model_fnc, input_shape, num_classes, learning_rate):
     super().__init__(evaluate_model_fnc, input_shape, num_classes, learning_rate)
@@ -189,6 +191,7 @@ class VanillaCNN_NAS(Vanilla_NAS):
     return model, number_of_mac, number_of_cells_limited
 
 class Mametoyas_NAS(Vanilla_NAS):
+  """Classifier: h x w x n_classes Conv -> Flatten -> Softmax"""
   architecture_name = 'resulting_architecture'
   def __init__(self, evaluate_model_fnc, input_shape, num_classes, learning_rate):
     super().__init__(evaluate_model_fnc, input_shape, num_classes, learning_rate)
@@ -255,7 +258,8 @@ class Mametoyas_NAS(Vanilla_NAS):
     
     return model, number_of_mac, number_of_cells_limited
   
-class X_NAS(Vanilla_NAS):
+class Jimmy_NAS_II(Vanilla_NAS):
+  """Classifier: GAP -> 1x1xn_classes Conv -> Flatten -> Softmax"""
   architecture_name = 'resulting_architecture'
   def __init__(self, evaluate_model_fnc, input_shape, num_classes, learning_rate):
     super().__init__(evaluate_model_fnc, input_shape, num_classes, learning_rate)
@@ -314,7 +318,8 @@ class X_NAS(Vanilla_NAS):
     
     return model, number_of_mac, number_of_cells_limited
 
-class Jimmy_NAS(Vanilla_NAS):
+class Jimmy_NAS_III(Vanilla_NAS):
+  """Classifier: loop Conv to shrink image size to 1x1xnc -> 1x1xn_classes Conv -> Flatten -> Softmax"""
   architecture_name = 'resulting_architecture'
   def __init__(self, evaluate_model_fnc, input_shape, num_classes, learning_rate):
     super().__init__(evaluate_model_fnc, input_shape, num_classes, learning_rate)
@@ -385,7 +390,8 @@ class Jimmy_NAS(Vanilla_NAS):
     
     return model, number_of_mac, number_of_cells_limited
   
-class Real_Hyper_FullyCNN_NAS(Vanilla_NAS):
+class Tiger_NAS(Vanilla_NAS):
+  """Classifier: 1x1xn_classes Conv -> Softmax"""
   architecture_name = 'resulting_architecture'
   def __init__(self, evaluate_model_fnc, input_shape, num_classes, learning_rate):
     super().__init__(evaluate_model_fnc, input_shape, num_classes, learning_rate)
@@ -427,7 +433,9 @@ class Real_Hyper_FullyCNN_NAS(Vanilla_NAS):
         number_of_mac = number_of_mac + (c_in * kernel_size[0] * kernel_size[1] * x.shape[1] * x.shape[2] * x.shape[3])
     
     # --- Fully Convolutional Classifier ---    
+    c_in = x.shape[3]
     x = keras.layers.Conv2D(filters=self.num_classes, kernel_size=(1, 1), padding='same')(x)
+    number_of_mac = number_of_mac + (c_in * 1 * 1 * x.shape[1] * x.shape[2] * x.shape[3])
     outputs = keras.layers.Softmax(axis=-1)(x)
 
     model = keras.Model(inputs=inputs, outputs=outputs)
