@@ -118,7 +118,7 @@ class ColabNAS :
         Flash, RAM = self.evaluate_flash_and_peak_RAM_occupancy(model_name)
         print(f"\nRAM: {RAM},\t Flash: {Flash},\t MACC: {MACC}\n")
         if MACC <= self.max_MACC and Flash <= self.max_Flash and RAM <= self.max_RAM and not number_of_cells_limited :
-            hist = model.fit(self.train_ds, epochs=self.epochs - 1, validation_data=self.validation_ds, validation_freq=1, callbacks=[checkpoint])
+            hist = model.fit(train_ds_mapped, epochs=self.epochs - 1, validation_data=val_ds_mapped, validation_freq=1, callbacks=[checkpoint])
             self.quantize_model_uint8(model_name)
             
             stringio = io.StringIO()
