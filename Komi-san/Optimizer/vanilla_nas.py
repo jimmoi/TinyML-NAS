@@ -428,7 +428,7 @@ class Real_Hyper_FullyCNN_NAS(Vanilla_NAS):
     
     # --- Fully Convolutional Classifier ---    
     x = keras.layers.Conv2D(filters=self.num_classes, kernel_size=(1, 1), padding='same')(x)
-    outputs = keras.layers.Softmax()(x)
+    outputs = keras.layers.Softmax(axis=-1)(x)
 
     model = keras.Model(inputs=inputs, outputs=outputs)
     opt = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
