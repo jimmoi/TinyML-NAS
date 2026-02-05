@@ -1,0 +1,85 @@
+Time: 0:07:00.796935
+
+Peak RAM: 32256
+
+Flash: 30688
+
+MACC: 2074788
+
+Model Validation Accuracy: 0.86
+
+Decision Variable: {'k': 8, 'c': 4}
+
+tflite Validation Accuracy: 0.853
+
+
+
+
+Architecture: Model: "model_9"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ input_10 (InputLayer)       [(None, 50, 50, 3)]       0         
+                                                                 
+ conv2d_34 (Conv2D)          (None, 50, 50, 8)         224       
+                                                                 
+ batch_normalization_25 (Bat  (None, 50, 50, 8)        32        
+ chNormalization)                                                
+                                                                 
+ re_lu_25 (ReLU)             (None, 50, 50, 8)         0         
+                                                                 
+ max_pooling2d_16 (MaxPoolin  (None, 25, 25, 8)        0         
+ g2D)                                                            
+                                                                 
+ conv2d_35 (Conv2D)          (None, 25, 25, 16)        1168      
+                                                                 
+ batch_normalization_26 (Bat  (None, 25, 25, 16)       64        
+ chNormalization)                                                
+                                                                 
+ re_lu_26 (ReLU)             (None, 25, 25, 16)        0         
+                                                                 
+ max_pooling2d_17 (MaxPoolin  (None, 12, 12, 16)       0         
+ g2D)                                                            
+                                                                 
+ conv2d_36 (Conv2D)          (None, 12, 12, 24)        3480      
+                                                                 
+ batch_normalization_27 (Bat  (None, 12, 12, 24)       96        
+ chNormalization)                                                
+                                                                 
+ re_lu_27 (ReLU)             (None, 12, 12, 24)        0         
+                                                                 
+ max_pooling2d_18 (MaxPoolin  (None, 6, 6, 24)         0         
+ g2D)                                                            
+                                                                 
+ conv2d_37 (Conv2D)          (None, 6, 6, 30)          6510      
+                                                                 
+ batch_normalization_28 (Bat  (None, 6, 6, 30)         120       
+ chNormalization)                                                
+                                                                 
+ re_lu_28 (ReLU)             (None, 6, 6, 30)          0         
+                                                                 
+ max_pooling2d_19 (MaxPoolin  (None, 3, 3, 30)         0         
+ g2D)                                                            
+                                                                 
+ conv2d_38 (Conv2D)          (None, 3, 3, 34)          9214      
+                                                                 
+ batch_normalization_29 (Bat  (None, 3, 3, 34)         136       
+ chNormalization)                                                
+                                                                 
+ re_lu_29 (ReLU)             (None, 3, 3, 34)          0         
+                                                                 
+ conv2d_39 (Conv2D)          (None, 3, 3, 4)           140       
+                                                                 
+ global_average_pooling2d_9   (None, 4)                0         
+ (GlobalAveragePooling2D)                                        
+                                                                 
+ softmax_9 (Softmax)         (None, 4)                 0         
+                                                                 
+=================================================================
+Total params: 21,184
+Trainable params: 20,960
+Non-trainable params: 224
+_________________________________________________________________
+
+
+
