@@ -4,72 +4,15 @@ import numpy as np
 import datetime
 from .abc_nas import ABC_NAS
 
-class Vanilla_NAS(ABC_NAS):
-  "Classifier: GAP -> dense(nc) -> dense(n_classes) -> softmax"
+class Base_NAS(ABC_NAS):
   architecture_name = 'resulting_architecture'
   def __init__(self, evaluate_model_fnc, input_shape, num_classes, learning_rate):
     super().__init__(evaluate_model_fnc, input_shape, num_classes, learning_rate)
     self.model_count = 0
-
-  def create_model(self, k, c):
-    kernel_size = (3,3)
-    pool_size = (2,2)
-    pool_strides = (2,2)
-
-    number_of_cells_limited = False
-    number_of_mac = 0
-
-    inputs = keras.Input(shape=self.input_shape)
-
-    #convolutional base
-    n = int(k)
-    multiplier = 2
-
-    #first convolutional layer
-    c_in = self.input_shape[2]
-    x = keras.layers.Conv2D(n, kernel_size, padding='same')(inputs)
-    x = keras.layers.BatchNormalization()(x)
-    x = keras.layers.ReLU()(x)
-
-    number_of_mac = number_of_mac + (c_in * kernel_size[0] * kernel_size[1] * x.shape[1] * x.shape[2] * x.shape[3])
-
-    #adding cells
-    for i in range(1, c + 1) :
-        if x.shape[1] <= 1 or x.shape[2] <= 1 :
-            number_of_cells_limited = True
-            break;
-        n = int(np.ceil(n * multiplier))
-        multiplier = multiplier - 2**-i
-        x = keras.layers.MaxPooling2D(pool_size=pool_size, strides=pool_strides, padding='valid')(x)
-        c_in = x.shape[3]
-        x = keras.layers.Conv2D(n, kernel_size, padding='same')(x)
-        x = keras.layers.BatchNormalization()(x)
-        x = keras.layers.ReLU()(x)
-        number_of_mac = number_of_mac + (c_in * kernel_size[0] * kernel_size[1] * x.shape[1] * x.shape[2] * x.shape[3])
-
-    #classifier
-    x = keras.layers.GlobalAveragePooling2D()(x)
-    input_shape = x.shape[1]
-    x = keras.layers.Dense(n)(x)
-    x = keras.layers.BatchNormalization()(x)
-    x = keras.layers.ReLU()(x)
-    number_of_mac = number_of_mac + (input_shape * x.shape[1])
-    x = keras.layers.Dense(self.num_classes)(x)
-    x = keras.layers.BatchNormalization()(x)
-    outputs = keras.layers.Softmax()(x)
-    number_of_mac = number_of_mac + (x.shape[1] * outputs.shape[1])
-
-    model = keras.Model(inputs=inputs, outputs=outputs)
-
-    opt = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-    model.compile(optimizer=opt,
-            loss='categorical_crossentropy',
-            metrics=['accuracy'])
-
-    model.summary()
-
-    return model, number_of_mac, number_of_cells_limited
-
+  
+  def create_model(self):
+    raise NotImplementedError("Model create method must be implemented")
+  
   def search(self):
     self.model_counter = 0
     epsilon = 0.005
@@ -133,7 +76,126 @@ class Vanilla_NAS(ABC_NAS):
     else :
       return{'k': 'unfeasible', 'c': c, 'max_val_acc': -3}
     
-class Jimmy_NAS_I(Vanilla_NAS):
+class Vanilla_NAS(Base_NAS):
+  "Classifier: GAP -> dense(nc) -> dense(n_classes) -> softmax"
+  architecture_name = 'resulting_architecture'
+  def __init__(self, evaluate_model_fnc, input_shape, num_classes, learning_rate):
+    super().__init__(evaluate_model_fnc, input_shape, num_classes, learning_rate)
+
+  def create_model(self, k, c):
+    kernel_size = (3,3)
+    pool_size = (2,2)
+    pool_strides = (2,2)
+
+    number_of_cells_limited = False
+    number_of_mac = 0
+
+    inputs = keras.Input(shape=self.input_shape)
+
+    #convolutional base
+    n = int(k)
+    multiplier = 2
+
+    #first convolutional layer
+    c_in = self.input_shape[2]
+    x = keras.layers.Conv2D(n, kernel_size, padding='same')(inputs)
+    x = keras.layers.BatchNormalization()(x)
+    x = keras.layers.ReLU()(x)
+
+    number_of_mac = number_of_mac + (c_in * kernel_size[0] * kernel_size[1] * x.shape[1] * x.shape[2] * x.shape[3])
+
+    #adding cells
+    for i in range(1, c + 1) :
+        if x.shape[1] <= 1 or x.shape[2] <= 1 :
+            number_of_cells_limited = True
+            break;
+        n = int(np.ceil(n * multiplier))
+        multiplier = multiplier - 2**-i
+        x = keras.layers.MaxPooling2D(pool_size=pool_size, strides=pool_strides, padding='valid')(x)
+        c_in = x.shape[3]
+        x = keras.layers.Conv2D(n, kernel_size, padding='same')(x)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.ReLU()(x)
+        number_of_mac = number_of_mac + (c_in * kernel_size[0] * kernel_size[1] * x.shape[1] * x.shape[2] * x.shape[3])
+
+    #classifier
+    x = keras.layers.GlobalAveragePooling2D()(x)
+    input_shape = x.shape[1]
+    x = keras.layers.Dense(n)(x)
+    x = keras.layers.BatchNormalization()(x)
+    x = keras.layers.ReLU()(x)
+    number_of_mac = number_of_mac + (input_shape * x.shape[1])
+    x = keras.layers.Dense(self.num_classes)(x)
+    x = keras.layers.BatchNormalization()(x)
+    outputs = keras.layers.Softmax()(x)
+    number_of_mac = number_of_mac + (x.shape[1] * outputs.shape[1])
+
+    model = keras.Model(inputs=inputs, outputs=outputs)
+
+    opt = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+    model.compile(optimizer=opt,
+            loss='categorical_crossentropy',
+            metrics=['accuracy'])
+
+    model.summary()
+
+    return model, number_of_mac, number_of_cells_limited
+
+  @staticmethod
+  def create_model_static(k, c, input_shape, num_classes, learning_rate):
+    kernel_size = (3,3)
+    pool_size = (2,2)
+    pool_strides = (2,2)
+
+    number_of_cells_limited = False
+
+    inputs = keras.Input(shape=input_shape)
+
+    #convolutional base
+    n = int(k)
+    multiplier = 2
+
+    #first convolutional layer
+    c_in = input_shape[2]
+    x = keras.layers.Conv2D(n, kernel_size, padding='same')(inputs)
+    x = keras.layers.BatchNormalization()(x)
+    x = keras.layers.ReLU()(x)
+
+    #adding cells
+    for i in range(1, c + 1) :
+        if x.shape[1] <= 1 or x.shape[2] <= 1 :
+            number_of_cells_limited = True
+            break;
+        n = int(np.ceil(n * multiplier))
+        multiplier = multiplier - 2**-i
+        x = keras.layers.MaxPooling2D(pool_size=pool_size, strides=pool_strides, padding='valid')(x)
+        c_in = x.shape[3]
+        x = keras.layers.Conv2D(n, kernel_size, padding='same')(x)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.ReLU()(x)
+
+    #classifier
+    x = keras.layers.GlobalAveragePooling2D()(x)
+    input_shape = x.shape[1]
+    x = keras.layers.Dense(n)(x)
+    x = keras.layers.BatchNormalization()(x)
+    x = keras.layers.ReLU()(x)
+    x = keras.layers.Dense(num_classes)(x)
+    x = keras.layers.BatchNormalization()(x)
+    outputs = keras.layers.Softmax()(x)
+
+    model = keras.Model(inputs=inputs, outputs=outputs)
+
+    opt = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+    model.compile(optimizer=opt,
+            loss='categorical_crossentropy',
+            metrics=['accuracy'])
+
+    model.summary()
+
+    return model, number_of_cells_limited
+  
+class Jimmy_NAS_I(Base_NAS):
   """Classifier: 1x1xn_classes Conv -> GAP -> Softmax"""
   architecture_name = 'resulting_architecture'
   def __init__(self, evaluate_model_fnc, input_shape, num_classes, learning_rate):
@@ -190,7 +252,57 @@ class Jimmy_NAS_I(Vanilla_NAS):
     
     return model, number_of_mac, number_of_cells_limited
 
-class Mametoyas_NAS(Vanilla_NAS):
+  @staticmethod
+  def create_model_static(k, c, input_shape, num_classes, learning_rate):
+    kernel_size = (3,3)
+    pool_size = (2,2)
+    pool_strides = (2,2)
+
+    number_of_cells_limited = False
+
+    inputs = keras.Input(shape=input_shape)
+
+    #convolutional base
+    n = int(k)
+    multiplier = 2
+
+    #first convolutional layer
+    c_in = input_shape[2]
+    x = keras.layers.Conv2D(n, kernel_size, padding='same')(inputs)
+    x = keras.layers.BatchNormalization()(x)
+    x = keras.layers.ReLU()(x)
+
+    #adding cells
+    for i in range(1, c + 1) :
+        if x.shape[1] <= 1 or x.shape[2] <= 1 :
+            number_of_cells_limited = True
+            break;
+        n = int(np.ceil(n * multiplier))
+        multiplier = multiplier - 2**-i
+        x = keras.layers.MaxPooling2D(pool_size=pool_size, strides=pool_strides, padding='valid')(x)
+        c_in = x.shape[3]
+        x = keras.layers.Conv2D(n, kernel_size, padding='same')(x)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.ReLU()(x)
+
+    # --- Fully Convolutional Classifier ---
+    c_in = x.shape[3]
+    x = keras.layers.Conv2D(filters=num_classes, kernel_size=(1, 1), padding='same')(x)
+    
+    x = keras.layers.GlobalAveragePooling2D()(x) 
+    outputs = keras.layers.Softmax()(x)
+
+    model = keras.Model(inputs=inputs, outputs=outputs)
+    opt = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+    model.compile(optimizer=opt,
+            loss='categorical_crossentropy',
+            metrics=['accuracy'])
+
+    model.summary()
+
+    return model, number_of_cells_limited
+  
+class Mametoyas_NAS(Base_NAS):
   """Classifier: h x w x n_classes Conv -> Flatten -> Softmax"""
   architecture_name = 'resulting_architecture'
   def __init__(self, evaluate_model_fnc, input_shape, num_classes, learning_rate):
@@ -258,8 +370,8 @@ class Mametoyas_NAS(Vanilla_NAS):
     
     return model, number_of_mac, number_of_cells_limited
   
-class Jimmy_NAS_II(Vanilla_NAS):
-  """Classifier: GAP -> 1x1xn_classes Conv -> Flatten -> Softmax"""
+class Jimmy_NAS_II(Base_NAS):
+  """Classifier: GAP -> reshape -> 1x1xn_classes Conv -> Flatten -> Softmax"""
   architecture_name = 'resulting_architecture'
   def __init__(self, evaluate_model_fnc, input_shape, num_classes, learning_rate):
     super().__init__(evaluate_model_fnc, input_shape, num_classes, learning_rate)
@@ -318,7 +430,7 @@ class Jimmy_NAS_II(Vanilla_NAS):
     
     return model, number_of_mac, number_of_cells_limited
 
-class Jimmy_NAS_III(Vanilla_NAS):
+class Jimmy_NAS_III(Base_NAS):
   """Classifier: loop Conv to shrink image size to 1x1xnc -> 1x1xn_classes Conv -> Flatten -> Softmax"""
   architecture_name = 'resulting_architecture'
   def __init__(self, evaluate_model_fnc, input_shape, num_classes, learning_rate):
@@ -390,7 +502,7 @@ class Jimmy_NAS_III(Vanilla_NAS):
     
     return model, number_of_mac, number_of_cells_limited
   
-class Tiger_NAS(Vanilla_NAS):
+class Tiger_NAS(Base_NAS):
   """Classifier: 1x1xn_classes Conv -> Softmax"""
   architecture_name = 'resulting_architecture'
   def __init__(self, evaluate_model_fnc, input_shape, num_classes, learning_rate):
@@ -445,7 +557,7 @@ class Tiger_NAS(Vanilla_NAS):
     
     return model, number_of_mac, number_of_cells_limited
 
-class Mametoyas_TinyCNNNASS(Vanilla_NAS):
+class Mametoyas_TinyCNNNASS(Base_NAS):
 
     architecture_name = 'resulting_architecture'
 

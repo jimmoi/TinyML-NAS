@@ -3,7 +3,6 @@ from pathlib import Path
 import tensorflow as tf
 from experiment_manager import Manager, all_experiment_dir
 from Optimizer import *
-from distill import *
 from my_util import load_train_dataset, prepare_nas_datasets
 import sys
 import json
