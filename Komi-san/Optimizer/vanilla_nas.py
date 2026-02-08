@@ -148,6 +148,7 @@ class Vanilla_NAS(Base_NAS):
     pool_strides = (2,2)
 
     number_of_cells_limited = False
+    number_of_mac = 0
 
     inputs = keras.Input(shape=input_shape)
 
@@ -160,6 +161,8 @@ class Vanilla_NAS(Base_NAS):
     x = keras.layers.Conv2D(n, kernel_size, padding='same')(inputs)
     x = keras.layers.BatchNormalization()(x)
     x = keras.layers.ReLU()(x)
+    
+    number_of_mac = number_of_mac + (c_in * kernel_size[0] * kernel_size[1] * x.shape[1] * x.shape[2] * x.shape[3])
 
     #adding cells
     for i in range(1, c + 1) :
@@ -173,6 +176,7 @@ class Vanilla_NAS(Base_NAS):
         x = keras.layers.Conv2D(n, kernel_size, padding='same')(x)
         x = keras.layers.BatchNormalization()(x)
         x = keras.layers.ReLU()(x)
+        number_of_mac = number_of_mac + (c_in * kernel_size[0] * kernel_size[1] * x.shape[1] * x.shape[2] * x.shape[3])
 
     #classifier
     x = keras.layers.GlobalAveragePooling2D()(x)
@@ -180,9 +184,11 @@ class Vanilla_NAS(Base_NAS):
     x = keras.layers.Dense(n)(x)
     x = keras.layers.BatchNormalization()(x)
     x = keras.layers.ReLU()(x)
+    number_of_mac = number_of_mac + (input_shape * x.shape[1])
     x = keras.layers.Dense(num_classes)(x)
     x = keras.layers.BatchNormalization()(x)
     outputs = keras.layers.Softmax()(x)
+    number_of_mac = number_of_mac + (x.shape[1] * outputs.shape[1])
 
     model = keras.Model(inputs=inputs, outputs=outputs)
 
@@ -193,7 +199,7 @@ class Vanilla_NAS(Base_NAS):
 
     model.summary()
 
-    return model, number_of_cells_limited
+    return model, number_of_mac, number_of_cells_limited
   
 class Jimmy_NAS_I(Base_NAS):
   """Classifier: 1x1xn_classes Conv -> GAP -> Softmax"""
@@ -259,6 +265,7 @@ class Jimmy_NAS_I(Base_NAS):
     pool_strides = (2,2)
 
     number_of_cells_limited = False
+    number_of_mac = 0
 
     inputs = keras.Input(shape=input_shape)
 
@@ -271,6 +278,8 @@ class Jimmy_NAS_I(Base_NAS):
     x = keras.layers.Conv2D(n, kernel_size, padding='same')(inputs)
     x = keras.layers.BatchNormalization()(x)
     x = keras.layers.ReLU()(x)
+    
+    number_of_mac = number_of_mac + (c_in * kernel_size[0] * kernel_size[1] * x.shape[1] * x.shape[2] * x.shape[3])
 
     #adding cells
     for i in range(1, c + 1) :
@@ -284,10 +293,12 @@ class Jimmy_NAS_I(Base_NAS):
         x = keras.layers.Conv2D(n, kernel_size, padding='same')(x)
         x = keras.layers.BatchNormalization()(x)
         x = keras.layers.ReLU()(x)
+        number_of_mac = number_of_mac + (c_in * kernel_size[0] * kernel_size[1] * x.shape[1] * x.shape[2] * x.shape[3])
 
     # --- Fully Convolutional Classifier ---
     c_in = x.shape[3]
     x = keras.layers.Conv2D(filters=num_classes, kernel_size=(1, 1), padding='same')(x)
+    number_of_mac += (c_in * 1 * 1 * x.shape[1] * x.shape[2] * x.shape[3])
     
     x = keras.layers.GlobalAveragePooling2D()(x) 
     outputs = keras.layers.Softmax()(x)
@@ -300,7 +311,7 @@ class Jimmy_NAS_I(Base_NAS):
 
     model.summary()
 
-    return model, number_of_cells_limited
+    return model, number_of_mac, number_of_cells_limited
   
 class Mametoyas_NAS(Base_NAS):
   """Classifier: h x w x n_classes Conv -> Flatten -> Softmax"""
