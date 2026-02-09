@@ -46,7 +46,9 @@ def write_model_log(model_log, file_path, model_names):
                f"{model_names[0]}_flash", 
                f"{model_names[1]}_flash", 
                f"{model_names[0]}_peak_ram", 
-               f"{model_names[1]}_peak_ram"]
+               f"{model_names[1]}_peak_ram",
+               f"{model_names[0]}_param_count",
+               f"{model_names[1]}_param_count"]
     column_name = ",".join(columns)
     text += column_name + "\n"
     
@@ -54,7 +56,6 @@ def write_model_log(model_log, file_path, model_names):
     for decision_variable, models in model_log.items():
         #each decision variable
         row_text = f"{decision_variable},"
-        
         row_text += f"{models[model_names[0]]['best_acc']}," if models[model_names[0]]['best_acc'] is not None else "Null"
         row_text += f"{models[model_names[1]]['best_acc']}," if models[model_names[1]]['best_acc'] is not None else "Null"
         row_text += f"{models[model_names[0]]['tflite_acc']}," if models[model_names[0]]['tflite_acc'] is not None else "Null"
@@ -65,6 +66,8 @@ def write_model_log(model_log, file_path, model_names):
         row_text += f"{models[model_names[1]]['flash']}," if models[model_names[1]]['flash'] is not None else "Null"
         row_text += f"{models[model_names[0]]['peak_ram']}," if models[model_names[0]]['peak_ram'] is not None else "Null"
         row_text += f"{models[model_names[1]]['peak_ram']}," if models[model_names[1]]['peak_ram'] is not None else "Null"
+        row_text += f"{models[model_names[0]]['param_count']}," if models[model_names[0]]['param_count'] is not None else "Null"
+        row_text += f"{models[model_names[1]]['param_count']}," if models[model_names[1]]['param_count'] is not None else "Null"
         
         text += row_text + "\n"
 
@@ -192,21 +195,25 @@ def main():
                     for model_name, ModelClass in model_list.items():
                             
                         temp_log[model_name] = {
-                            "train_loss":None,
-                            "val_loss":None,
+                            "param_count":None,
+                            "train_losses":None,
+                            "val_losses":None,
+                            "train_accs":None,
+                            "val_accs":None,
                             "best_acc":None,
                             "tflite_acc":None,
+                            "mac_count":None,
+                            "flash":None,
+                            "peak_ram":None
                         }
                         
                         # full model
                         model_file = decision_variable_dir / (model_name + ".h5")
                         model, mac_count, cell_limit_status = ModelClass.create_model_static(k, c, input_shape, num_classes, learning_rate)
+                        temp_log[model_name]["param_count"] = model.count_params()
+                        temp_log[model_name]["mac_count"] = mac_count
                         
                         if cell_limit_status:
-                            temp_log[model_name]["best_acc"] = None
-                            temp_log[model_name]["train_losses"] = None
-                            temp_log[model_name]["val_losses"] = None
-                            temp_log[model_name]["tflite_acc"] = None
                             continue
                         
                         checkpoint = tf.keras.callbacks.ModelCheckpoint(
@@ -219,7 +226,6 @@ def main():
                         temp_log[model_name]["val_losses"] = np.around(hist.history['val_loss'], 6)
                         temp_log[model_name]["train_accs"] = np.around(hist.history['accuracy'], 6)
                         temp_log[model_name]["val_accs"] = np.around(hist.history['val_accuracy'], 6)
-                        temp_log[model_name]["mac_count"] = mac_count
                         
                         
                         # tflite model
