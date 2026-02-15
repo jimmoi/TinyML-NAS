@@ -1,0 +1,3 @@
+decision_variable,vanillaNAS_dense_best_acc,JimmyNAS_I_fullyCNN_best_acc,vanillaNAS_dense_tflite_acc,JimmyNAS_I_fullyCNN_tflite_acc,vanillaNAS_dense_macs,JimmyNAS_I_fullyCNN_macs,vanillaNAS_dense_flash,JimmyNAS_I_fullyCNN_flash,vanillaNAS_dense_peak_ram,JimmyNAS_I_fullyCNN_peak_ram
+k_4_c_4,0.802,0.885,0.285,0.284,653696,654003,14840,13864,22016,22016,
+k_8_c_4,0.899,0.911,0.283,0.292,2074736,2074788,32776,30816,32768,32256,
