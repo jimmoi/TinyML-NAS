@@ -250,7 +250,7 @@ def main():
     
     datasets_dir = Path("Datasets")
     for data_dir in datasets_dir.iterdir():
-        if data_dir.is_dir() and data_dir.name == "Animals-3":
+        if data_dir.is_dir() and data_dir.name == "Flowers-4":
             experiment_dir = all_experiment_dir / data_dir.name
             experiment_dir.mkdir(parents=True, exist_ok=True)
             
