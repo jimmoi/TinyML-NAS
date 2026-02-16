@@ -1,0 +1,6 @@
+k-fold,vanillaNAS_dense_param_count,JimmyNAS_I_fullyCNN_param_count,vanillaNAS_dense_best_acc,JimmyNAS_I_fullyCNN_best_acc,vanillaNAS_dense_mac_count,JimmyNAS_I_fullyCNN_mac_count,vanillaNAS_dense_flash,JimmyNAS_I_fullyCNN_flash,vanillaNAS_dense_peak_ram,JimmyNAS_I_fullyCNN_peak_ram,vanillaNAS_dense_tflite_acc,JimmyNAS_I_fullyCNN_tflite_acc,vanillaNAS_dense_tflite_precision,JimmyNAS_I_fullyCNN_tflite_precision,vanillaNAS_dense_tflite_recall,JimmyNAS_I_fullyCNN_tflite_recall,vanillaNAS_dense_tflite_f1,JimmyNAS_I_fullyCNN_tflite_f1
+fold_0,1618,5114,0.919,0.919,574564,1764576,7800,11256,20992,31232,0.917,0.916,0.917,0.917,0.916,0.915,0.916,0.916
+fold_1,5818,11756,0.92,0.916,1758244,1993104,12624,19584,31232,31744,0.917,0.917,0.919,0.916,0.915,0.916,0.916,0.916
+fold_2,5818,3107,0.921,0.917,1758244,633816,12680,10040,31232,21504,0.92,0.919,0.92,0.919,0.92,0.918,0.92,0.919
+fold_3,490,11756,0.917,0.925,211144,1993104,6544,19584,18432,31744,0.914,0.924,0.916,0.924,0.913,0.924,0.914,0.924
+fold_4,1866,5114,0.92,0.913,1260260,1764576,7216,11320,30720,31232,0.916,0.91,0.917,0.913,0.915,0.909,0.915,0.91

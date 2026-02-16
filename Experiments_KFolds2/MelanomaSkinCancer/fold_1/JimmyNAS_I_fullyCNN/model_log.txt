@@ -1,0 +1,76 @@
+Time: 0:05:37.792641
+
+Decision Variable: {'k': 8, 'c': 3}
+
+Tflite Accuracy: 0.916549
+
+Classification Report: 
+              precision    recall  f1-score   support
+
+           0       0.92      0.92      0.92      1112
+           1       0.91      0.91      0.91      1009
+
+    accuracy                           0.92      2121
+   macro avg       0.92      0.92      0.92      2121
+weighted avg       0.92      0.92      0.92      2121
+
+
+Architecture: 
+Model: "model_37"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ input_38 (InputLayer)       [(None, 50, 50, 3)]       0         
+                                                                 
+ conv2d_102 (Conv2D)         (None, 50, 50, 8)         224       
+                                                                 
+ batch_normalization_125 (Ba  (None, 50, 50, 8)        32        
+ tchNormalization)                                               
+                                                                 
+ re_lu_105 (ReLU)            (None, 50, 50, 8)         0         
+                                                                 
+ max_pooling2d_48 (MaxPoolin  (None, 25, 25, 8)        0         
+ g2D)                                                            
+                                                                 
+ conv2d_103 (Conv2D)         (None, 25, 25, 16)        1168      
+                                                                 
+ batch_normalization_126 (Ba  (None, 25, 25, 16)       64        
+ tchNormalization)                                               
+                                                                 
+ re_lu_106 (ReLU)            (None, 25, 25, 16)        0         
+                                                                 
+ max_pooling2d_49 (MaxPoolin  (None, 12, 12, 16)       0         
+ g2D)                                                            
+                                                                 
+ conv2d_104 (Conv2D)         (None, 12, 12, 24)        3480      
+                                                                 
+ batch_normalization_127 (Ba  (None, 12, 12, 24)       96        
+ tchNormalization)                                               
+                                                                 
+ re_lu_107 (ReLU)            (None, 12, 12, 24)        0         
+                                                                 
+ max_pooling2d_50 (MaxPoolin  (None, 6, 6, 24)         0         
+ g2D)                                                            
+                                                                 
+ conv2d_105 (Conv2D)         (None, 6, 6, 30)          6510      
+                                                                 
+ batch_normalization_128 (Ba  (None, 6, 6, 30)         120       
+ tchNormalization)                                               
+                                                                 
+ re_lu_108 (ReLU)            (None, 6, 6, 30)          0         
+                                                                 
+ conv2d_106 (Conv2D)         (None, 6, 6, 2)           62        
+                                                                 
+ global_average_pooling2d_37  (None, 2)                0         
+  (GlobalAveragePooling2D)                                       
+                                                                 
+ softmax_37 (Softmax)        (None, 2)                 0         
+                                                                 
+=================================================================
+Total params: 11,756
+Trainable params: 11,600
+Non-trainable params: 156
+_________________________________________________________________
+
+
+
