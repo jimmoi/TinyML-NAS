@@ -1,26 +1,27 @@
 from sklearn.model_selection import KFold
+from sklearn.metrics import (
+    accuracy_score, 
+    precision_recall_fscore_support, 
+    classification_report, 
+    confusion_matrix, 
+    ConfusionMatrixDisplay
+)
 from pathlib import Path
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 from tensorflow import keras
-from pathlib import Path
-import tensorflow as tf
-from experiment_manager import Manager
 from Optimizer import *
-from my_util import load_train_dataset, test_tflite_model
-import sys
-import json
-import pickle
-import matplotlib.pyplot as plt
-import os
-import numpy as np
-import matplotlib.pyplot as plt
 import subprocess
 import re
+from ColabNAS import ColabNAS
+import seaborn as sns
+
+RANDOM_SEED = 42
 
 def load_image_paths(data_dir):
-    class_names = sorted([p.name for p in data_dir.iterdir() if p.is_dir()])
+    # imitate tensorflow.keras.utils.image_dataset_from_directory
+    class_names = sorted([p.name for p in data_dir.iterdir() if p.is_dir()]) 
     class_to_idx = {name: idx for idx, name in enumerate(class_names)}
 
     image_paths = []
@@ -35,9 +36,8 @@ def load_image_paths(data_dir):
 def make_dataset(paths, labels, input_shape, num_classes, batch_size, shuffle=True):
     def parse_image(path, label):
         image = tf.io.read_file(path)
-        image = tf.image.decode_jpeg(image, channels=3)
+        image = tf.image.decode_image(image, channels=3, expand_animations=False)
         image = tf.image.resize(image, input_shape[:2])
-        image = tf.cast(image, tf.float32) / 255.0
         label = tf.one_hot(label, num_classes)
         return image, label
 
@@ -48,7 +48,7 @@ def make_dataset(paths, labels, input_shape, num_classes, batch_size, shuffle=Tr
     ds = ds.batch(batch_size).prefetch(tf.data.AUTOTUNE)
     return ds
 
-def load_data_kfold(data_dir, input_shape=(50, 50, 3), batch_size=128, k_folds=5, cache=True ):
+def load_data_kfold(data_dir, input_shape, batch_size, k_folds=5, cache=True ):
     train_dir = data_dir / "train"
     test_dir  = data_dir / "test"
 
@@ -57,8 +57,17 @@ def load_data_kfold(data_dir, input_shape=(50, 50, 3), batch_size=128, k_folds=5
     num_classes = len(class_names)
 
     # Test dataset (unchanged)
-    test_ds = tf.keras.utils.image_dataset_from_directory( directory=test_dir, labels='inferred', label_mode='categorical', image_size=input_shape[:2], batch_size=1, shuffle=False )
-    kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
+    test_ds = tf.keras.utils.image_dataset_from_directory(
+            directory= test_dir,
+            labels='inferred',
+            label_mode='categorical',
+            color_mode='rgb',
+            batch_size=1,
+            image_size=input_shape[:2],
+            shuffle=True
+        )
+    
+    kf = KFold(n_splits=k_folds, shuffle=True, random_state=RANDOM_SEED)
 
     folds = []
     for fold_idx, (train_idx, val_idx) in enumerate(kf.split(image_paths)):
@@ -72,93 +81,53 @@ def load_data_kfold(data_dir, input_shape=(50, 50, 3), batch_size=128, k_folds=5
             val_ds = val_ds.cache()
         folds.append((train_ds, val_ds))
 
-    return folds, test_ds, input_shape, num_classes
+    return folds, test_ds, num_classes
 
-def write_model_log(model_log, file_path, model_names):
+def write_compare_model_log(model_log, file_path, model_names):
     text = ""
     
     # make column name
-    columns = ["decision_variable",
-                f"{model_names[0]}_best_acc", 
-                f"{model_names[1]}_best_acc", 
-                f"{model_names[0]}_tflite_acc", 
-                f"{model_names[1]}_tflite_acc", 
-                f"{model_names[0]}_macs", 
-                f"{model_names[1]}_macs", 
-                f"{model_names[0]}_flash", 
-                f"{model_names[1]}_flash", 
-                f"{model_names[0]}_peak_ram", 
-                f"{model_names[1]}_peak_ram"]
+    columns = ["k-fold"]
+    
+    # extract metric names
+    first_kfold = next(iter(model_log.values()))
+    first_model = next(iter(first_kfold.values()))
+    metrices_name = list(first_model.keys()) 
+    
+    for metric in metrices_name:
+        if metric in ["train_losses", "val_losses"]:
+            continue
+        columns.append(f"{model_names[0]}_{metric}")
+        columns.append(f"{model_names[1]}_{metric}")
+    
     column_name = ",".join(columns)
     text += column_name + "\n"
     
     # make row
-    for decision_variable, models in model_log.items():
-        #each decision variable
-        row_text = f"{decision_variable},"
-        row_text += f"{models[model_names[0]]['best_acc']}," if models[model_names[0]]['best_acc'] is not None else "Null"
-        row_text += f"{models[model_names[1]]['best_acc']}," if models[model_names[1]]['best_acc'] is not None else "Null"
-        row_text += f"{models[model_names[0]]['tflite_acc']}," if models[model_names[0]]['tflite_acc'] is not None else "Null"
-        row_text += f"{models[model_names[1]]['tflite_acc']}," if models[model_names[1]]['tflite_acc'] is not None else "Null"
-        row_text += f"{models[model_names[0]]['mac_count']}," if models[model_names[0]]['mac_count'] is not None else "Null"
-        row_text += f"{models[model_names[1]]['mac_count']}," if models[model_names[1]]['mac_count'] is not None else "Null"
-        row_text += f"{models[model_names[0]]['flash']}," if models[model_names[0]]['flash'] is not None else "Null"
-        row_text += f"{models[model_names[1]]['flash']}," if models[model_names[1]]['flash'] is not None else "Null"
-        row_text += f"{models[model_names[0]]['peak_ram']}," if models[model_names[0]]['peak_ram'] is not None else "Null"
-        row_text += f"{models[model_names[1]]['peak_ram']}," if models[model_names[1]]['peak_ram'] is not None else "Null"
-        text += row_text + "\n"
+    for kfold_idx, models in model_log.items():
+        row_text = []
+        row_text.append(kfold_idx)
+        
+        for metric in metrices_name:
+            if metric in ["train_losses", "val_losses"]:
+                continue
+            row_text.append(str(models[model_names[0]][metric]) if models[model_names[0]][metric] is not None else "Null")
+            row_text.append(str(models[model_names[1]][metric]) if models[model_names[1]][metric] is not None else "Null")
+        text += ",".join(row_text) + "\n"
     with open(file_path, 'w') as f:
         f.write(text)
-        
-def quantize_model(train_ds, model_file, tflite_model_file):
-    def representative_dataset():
-            count = 0
-            for images, labels in train_ds:
-                for i in range(images.shape[0]):
-                    if count >= 150:
-                        return
-                # Ensure the data matches the model's expected input shape and type
-                yield [tf.dtypes.cast(images[i:i+1], tf.float32)]
-                count += 1
 
-    model = tf.keras.models.load_model(model_file)
-    converter = tf.lite.TFLiteConverter.from_keras_model(model)
+def write_individual_model_log(search_output, file_path):
+    text = ""
+    text = "Time: " + str(search_output['time']) + "\n\n"
+    text += "Decision Variable: " + str(search_output['decision_variables']) + "\n\n"
+    text += "Tflite Accuracy: " + str(search_output['tflite_accuracy']) + "\n\n"
+    text += "Classification Report: \n" + search_output['classification_report'] + "\n\n"
+    text += "Architecture: \n" + search_output['model_architecture'] + "\n\n"
+    
+    print(text, file=open(file_path, "w"))
 
-    # 1. Standard optimizations
-    converter.optimizations = [tf.lite.Optimize.DEFAULT]
-    converter.representative_dataset = representative_dataset
-
-    # 2. ENFORCE Integer-only (Crucial for STM32)
-    converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
-
-    # 3. Explicitly set input/output to UINT8 for the hardware interface
-    converter.inference_input_type = tf.uint8
-    converter.inference_output_type = tf.uint8
-
-    # 4. Mandatory for some TFLite versions to ensure full quantization
-    # This prevents the "fully_quantize: 0" status you saw earlier
-    converter._experimental_new_quantizer = True 
-
-    tflite_quant_model = converter.convert()
-
-    with open(tflite_model_file, 'wb') as f:
-        f.write(tflite_quant_model)
-
-def evaluate_flash_and_peak_RAM_occupancy(stm32_path, tflite_model_path) :
-    #evaluate its peak RAM occupancy and its Flash occupancy using STMicroelectronics' X-CUBE-AI
-    proc = subprocess.Popen([stm32_path, tflite_model_path], stdout=subprocess.PIPE)
-    try:
-        outs, errs = proc.communicate(timeout=15)
-        Flash, RAM = re.findall(r'\d+', str(outs))
-    except subprocess.TimeoutExpired:
-        proc.kill()
-        outs, errs = proc.communicate()
-        print("stm32tflm error")
-        exit()
-
-    return int(Flash), int(RAM)
-
-def plot(log, model_names, file_path):
+def plot_losses(log, model_names, file_path):
     def plot_loss(ax, hist, model_name):
         ax.set_xlabel("Epoch")
         ax.set_ylabel("Loss")
@@ -166,24 +135,22 @@ def plot(log, model_names, file_path):
         ax.plot(hist['val_losses'], label="val_losses")
         ax.set_title(model_name)
         ax.legend()
-        
-    def plot_acc(ax, hist, model_name):
-        ax.set_xlabel("Epoch")
-        ax.set_ylabel("Accuracy")
-        ax.plot(hist['train_accs'], label="train_accs")
-        ax.plot(hist['val_accs'], label="val_accs")
-        ax.set_title(model_name)
-        ax.legend()
     
-    fig, ax = plt.subplots(2, 2, figsize=(12, 12), sharex=True, sharey=True)
-    plot_loss(ax[0,0], log[model_names[0]], model_names[0])
-    plot_loss(ax[0,1], log[model_names[1]], model_names[1])
-    plot_acc(ax[1,0], log[model_names[0]], model_names[0])
-    plot_acc(ax[1,1], log[model_names[1]], model_names[1])
+    fig, ax = plt.subplots(1, 2, figsize=(12, 6), sharex=True, sharey=True)
+    plot_loss(ax[0], log[model_names[0]], model_names[0])
+    plot_loss(ax[1], log[model_names[1]], model_names[1])
     
     plt.savefig(file_path)
     plt.close()
-    
+
+def plot_confusion_matrix(cm, file_path):
+    plt.figure(figsize=(10, 10))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    plt.title('TFLite Model Confusion Matrix')
+    plt.savefig(file_path)
+    plt.close()
 
 def visualize_dataset_sample(dataset, fold_num, num_images=9):
     plt.figure(figsize=(10, 10))
@@ -200,7 +167,58 @@ def visualize_dataset_sample(dataset, fold_num, num_images=9):
     
     plt.suptitle(f"Sample from Fold {fold_num} Training Set")
     plt.show()
+
+def test_tflite_model(tflite_model_file, test_ds):
+    interpreter = tf.lite.Interpreter(tflite_model_file)
+    interpreter.allocate_tensors()
+
+    output_details = interpreter.get_output_details()[0]  # Model has single output.
+    input_details = interpreter.get_input_details()[0]  # Model has single input.
+
+    all_true_labels = []
+    all_predicted_labels = []
+
+    for image, label in test_ds:
+        # Quantization handling
+        if input_details['dtype'] == tf.uint8:
+            input_scale, input_zero_point = input_details["quantization"]
+            image = image / input_scale + input_zero_point
+            input_data = tf.dtypes.cast(image, tf.uint8)
+        interpreter.set_tensor(input_details['index'], input_data)
+        interpreter.invoke()
+        
+        # Get prediction
+        predicted_label = interpreter.get_tensor(output_details['index']).argmax()
+        true_label = label.numpy().argmax()
+
+        all_true_labels.append(true_label)
+        all_predicted_labels.append(predicted_label)
+
+    # --- Metrics Calculation using sklearn ---
     
+    # Calculate precision, recall, and f1 (macro averaged for multi-class)
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        all_true_labels, 
+        all_predicted_labels, 
+        average='macro'
+    )
+    accuracy = accuracy_score(all_true_labels, all_predicted_labels)
+    
+    result_metrices = {
+        "tflite_acc": np.around(accuracy, decimals=3),
+        "tflite_precision": np.around(precision, decimals=3),
+        "tflite_recall": np.around(recall, decimals=3),
+        "tflite_f1": np.around(f1, decimals=3),
+    }
+    
+    # Generate the full text report
+    report = classification_report(all_true_labels, all_predicted_labels)
+    
+    # Generate the confusion matrix
+    cm = confusion_matrix(all_true_labels, all_predicted_labels)
+    
+    return result_metrices, report, cm
+
 def main():
     gpu_devices = tf.config.list_physical_devices('GPU')
     print("Num GPUs Available: ", len(gpu_devices))
@@ -215,89 +233,101 @@ def main():
     all_experiment_dir.mkdir(exist_ok=True)
         
     ## Experiment Settings
-    epochs = 100
-    learning_rate = 1e-3
-    k_list = [4, 8]
-    c_list = [0, 1, 2, 3, 4]
+    # STM32 settings
+    stm32_path = Path("stm32tflm.exe")
+    peak_RAM_upper_bound = 40960
+    Flash_upper_bound = 131072
+    MACC_upper_bound = 2730000
+    input_shape = (50,50,3)
+    
+    # dataset settings
+    batch_size = 128
+    
+    # Models
     model_list = {'vanillaNAS_dense' : Vanilla_NAS, 
                     'JimmyNAS_I_fullyCNN' : Jimmy_NAS_I}
     
-    stm32_path = Path("stm32tflm.exe")
     
     datasets_dir = Path("Datasets")
     for data_dir in datasets_dir.iterdir():
-        if data_dir.is_dir() and data_dir.name == "Flowers-4":
+        if data_dir.is_dir() and data_dir.name == "Animals-3":
             experiment_dir = all_experiment_dir / data_dir.name
             experiment_dir.mkdir(parents=True, exist_ok=True)
             
-            model_log_file = experiment_dir / "model_log.csv"
+            model_log_file = experiment_dir / "models_log.csv"
             model_log = {}
             
             # 1. LOAD DATA USING YOUR KFOLD FUNCTION
-            folds, test_ds, input_shape, num_classes = load_data_kfold(data_dir, input_shape=(50, 50, 3), k_folds=5)
+            folds, test_ds, num_classes = load_data_kfold(data_dir, input_shape=input_shape, batch_size=batch_size, k_folds=5)
 
             # 2. ITERATE THROUGH FOLDS
             for fold_idx, (train_ds, validation_ds) in enumerate(folds):
+                fold_dir = experiment_dir / f"fold_{fold_idx}"
+                fold_dir.mkdir(parents=True, exist_ok=True)
+                
                 print(f"\n--- Starting Fold {fold_idx + 1} ---")
-                # Visualize the current fold's data
-                visualize_dataset_sample(train_ds, fold_idx)
+                # # Visualize the current fold's data
+                # visualize_dataset_sample(train_ds, fold_idx)
+                
+                model_log["fold_" + str(fold_idx)] = {}
+                temp_log = model_log["fold_" + str(fold_idx)]
+                
+                data = {
+                    "train": train_ds,
+                    "validation": validation_ds,
+                    "test": test_ds,
+                }
+                        
+                for model_name, ModelClass in model_list.items():
+                    model_dir = fold_dir / model_name
+                    model_dir.mkdir(parents=True, exist_ok=True)
+                    
+                    print(f"\n--- Starting {model_name} ---")
+                    
+                    
+                    temp_log[model_name] = {
+                        "param_count":None,
+                        "train_losses":None,
+                        "val_losses":None,
+                        "best_acc":None,
+                        "mac_count":None,
+                        "flash":None,
+                        "peak_ram":None,
+                        "tflite_acc":None,
+                        "tflite_precision":None,
+                        "tflite_recall":None,
+                        "tflite_f1":None,
+                    }
+                    
+                    nas = ColabNAS(peak_RAM_upper_bound, Flash_upper_bound, MACC_upper_bound, data, num_classes, input_shape, model_dir)
+                    search_output = nas.search(ModelClass)
+                    
+                    if search_output is None:
+                        continue
 
-                for k in k_list:
-                    for c in c_list:
-                        # Update path to include fold index so you don't overwrite results
-                        fold_dir = experiment_dir / f"fold_{fold_idx}" / f"k_{k}_c_{c}"
-                        fold_dir.mkdir(parents=True, exist_ok=True)
+                    temp_log[model_name]["param_count"] = search_output["param_count"]
+                    temp_log[model_name]["train_losses"] = search_output["train_losses"]
+                    temp_log[model_name]["val_losses"] = search_output["val_losses"]
+                    temp_log[model_name]["best_acc"] = search_output["val_accuracy"]
+                    temp_log[model_name]["mac_count"] = search_output["MACC"]
+                    temp_log[model_name]["flash"] = search_output["Flash"]
+                    temp_log[model_name]["peak_ram"] = search_output["RAM"]
                     
-                    model_log[f"k_{k}_c_{c}"] = {}
-                    temp_log = model_log[f"k_{k}_c_{c}"]
+                    # tflite model
+                    tflite_model_file = search_output["path_to_best_architecture"]
+                    result_metrices, report, cm = test_tflite_model(str(tflite_model_file), test_ds)
+                    temp_log[model_name].update(result_metrices)
+                    search_output['classification_report'] = report
                     
-                    for model_name, ModelClass in model_list.items():
+                    
+                    write_individual_model_log(search_output, model_dir / "model_log.txt")
+                    
+                    plot_confusion_matrix(cm, model_dir / "cm.png")
+                    
+                # plot loss
+                plot_losses(temp_log, list(model_list.keys()), fold_dir / f"loss.png")
                             
-                        temp_log[model_name] = {
-                            "train_loss":None,
-                            "val_loss":None,
-                            "best_acc":None,
-                            "tflite_acc":None,
-                        }
-                        
-                        # full model
-                        model_file = fold_dir / (model_name + ".h5")
-                        model, mac_count, cell_limit_status = ModelClass.create_model_static(k, c, input_shape, num_classes, learning_rate)
-                        
-                        if cell_limit_status:
-                            temp_log[model_name]["best_acc"] = None
-                            temp_log[model_name]["train_losses"] = None
-                            temp_log[model_name]["val_losses"] = None
-                            temp_log[model_name]["tflite_acc"] = None
-                            continue
-                        
-                        checkpoint = tf.keras.callbacks.ModelCheckpoint(
-                            str(model_file), monitor='val_accuracy',
-                            verbose=1, save_best_only=True, save_weights_only=False, mode='auto')
-                        
-                        hist = model.fit(train_ds, epochs=epochs - 1, validation_data=validation_ds, validation_freq=1, callbacks=[checkpoint])
-                        temp_log[model_name]["best_acc"] = np.around(np.amax(hist.history['val_accuracy']), decimals=3)
-                        temp_log[model_name]["train_losses"] = np.around(hist.history['loss'], 6)
-                        temp_log[model_name]["val_losses"] = np.around(hist.history['val_loss'], 6)
-                        temp_log[model_name]["train_accs"] = np.around(hist.history['accuracy'], 6)
-                        temp_log[model_name]["val_accs"] = np.around(hist.history['val_accuracy'], 6)
-                        temp_log[model_name]["mac_count"] = mac_count
-                        
-                        
-                        # tflite model
-                        tflite_model_file = fold_dir / (model_name + ".tflite")
-                        quantize_model(train_ds, model_file, tflite_model_file)
-                        tflite_accuracy = test_tflite_model(str(tflite_model_file), test_ds)
-                        temp_log[model_name]["tflite_acc"] = np.around(tflite_accuracy, decimals=3)
-                        
-                        flash, peak_ram = evaluate_flash_and_peak_RAM_occupancy(stm32_path, str(tflite_model_file))
-                        temp_log[model_name]["flash"] = flash
-                        temp_log[model_name]["peak_ram"] = peak_ram
-                        
-                    # plot loss
-                    plot(temp_log, list(model_list.keys()), fold_dir / f"loss.png")
-                            
-            write_model_log(model_log, model_log_file, list(model_list.keys()))    
+            write_compare_model_log(model_log, model_log_file, list(model_list.keys()))    
 
 if __name__ == "__main__":
     main()

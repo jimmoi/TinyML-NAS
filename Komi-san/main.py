@@ -49,12 +49,12 @@ def main():
                     "train": train_ds,
                     "validation": validation_ds,
                     "test": test_ds,
-                    "transform": prepare_nas_datasets
+                    "transform": None
                 }
                 manager = Manager(data, num_classes, experiment_dir=experiment_dir, experiment_name="WTF", input_shape=input_shape)
                 nas = manager.setup_nas()
 
-                search_output = nas.search(Tiger_NAS)
+                search_output = nas.search(Jimmy_NAS_I)
           
                 manager.visualize(search_output)
                 

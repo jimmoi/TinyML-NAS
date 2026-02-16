@@ -297,21 +297,21 @@ def test_tflite_model(path_to_resulting_architecture, test_ds) :
     interpreter = tf.lite.Interpreter(path_to_resulting_architecture)
     interpreter.allocate_tensors()
 
-    output = interpreter.get_output_details()[0]  # Model has single output.
-    input = interpreter.get_input_details()[0]  # Model has single input.
+    output_details = interpreter.get_output_details()[0]  # Model has single output.
+    input_details = interpreter.get_input_details()[0]  # Model has single input.
 
     correct = 0
     wrong = 0
 
     for image, label in test_ds :
         # Check if the input type is quantized, then rescale input data to uint8
-        if input['dtype'] == tf.uint8:
-            input_scale, input_zero_point = input["quantization"]
+        if input_details['dtype'] == tf.uint8:
+            input_scale, input_zero_point = input_details["quantization"]
             image = image / input_scale + input_zero_point
         input_data = tf.dtypes.cast(image, tf.uint8)
-        interpreter.set_tensor(input['index'], input_data)
+        interpreter.set_tensor(input_details['index'], input_data)
         interpreter.invoke()
-        if label.numpy().argmax() == interpreter.get_tensor(output['index']).argmax() :
+        if label.numpy().argmax() == interpreter.get_tensor(output_details['index']).argmax() :
             correct = correct + 1
         else :
             wrong = wrong + 1

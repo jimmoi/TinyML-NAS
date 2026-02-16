@@ -31,7 +31,7 @@ def load_data(data_dir, input_shape=(50, 50, 3), batch_size=128, val_split=0.3, 
         )
     return train_ds, validation_ds, test_ds, input_shape, num_classes
 
-def write_model_log(model_log, file_path, model_names):
+def write_compare_model_log(model_log, file_path, model_names):
     
     text = ""
     
@@ -56,19 +56,18 @@ def write_model_log(model_log, file_path, model_names):
     for decision_variable, models in model_log.items():
         #each decision variable
         row_text = f"{decision_variable},"
-        row_text += f"{models[model_names[0]]['best_acc']}," if models[model_names[0]]['best_acc'] is not None else "Null"
-        row_text += f"{models[model_names[1]]['best_acc']}," if models[model_names[1]]['best_acc'] is not None else "Null"
-        row_text += f"{models[model_names[0]]['tflite_acc']}," if models[model_names[0]]['tflite_acc'] is not None else "Null"
-        row_text += f"{models[model_names[1]]['tflite_acc']}," if models[model_names[1]]['tflite_acc'] is not None else "Null"
-        row_text += f"{models[model_names[0]]['mac_count']}," if models[model_names[0]]['mac_count'] is not None else "Null"
-        row_text += f"{models[model_names[1]]['mac_count']}," if models[model_names[1]]['mac_count'] is not None else "Null"
-        row_text += f"{models[model_names[0]]['flash']}," if models[model_names[0]]['flash'] is not None else "Null"
-        row_text += f"{models[model_names[1]]['flash']}," if models[model_names[1]]['flash'] is not None else "Null"
-        row_text += f"{models[model_names[0]]['peak_ram']}," if models[model_names[0]]['peak_ram'] is not None else "Null"
-        row_text += f"{models[model_names[1]]['peak_ram']}," if models[model_names[1]]['peak_ram'] is not None else "Null"
-        row_text += f"{models[model_names[0]]['param_count']}," if models[model_names[0]]['param_count'] is not None else "Null"
-        row_text += f"{models[model_names[1]]['param_count']}," if models[model_names[1]]['param_count'] is not None else "Null"
-        
+        row_text += f"{models[model_names[0]]['best_acc']}," if models[model_names[0]]['best_acc'] is not None else "Null," 
+        row_text += f"{models[model_names[1]]['best_acc']}," if models[model_names[1]]['best_acc'] is not None else "Null," 
+        row_text += f"{models[model_names[0]]['tflite_acc']}," if models[model_names[0]]['tflite_acc'] is not None else "Null," 
+        row_text += f"{models[model_names[1]]['tflite_acc']}," if models[model_names[1]]['tflite_acc'] is not None else "Null," 
+        row_text += f"{models[model_names[0]]['mac_count']}," if models[model_names[0]]['mac_count'] is not None else "Null," 
+        row_text += f"{models[model_names[1]]['mac_count']}," if models[model_names[1]]['mac_count'] is not None else "Null," 
+        row_text += f"{models[model_names[0]]['flash']}," if models[model_names[0]]['flash'] is not None else "Null," 
+        row_text += f"{models[model_names[1]]['flash']}," if models[model_names[1]]['flash'] is not None else "Null," 
+        row_text += f"{models[model_names[0]]['peak_ram']}," if models[model_names[0]]['peak_ram'] is not None else "Null," 
+        row_text += f"{models[model_names[1]]['peak_ram']}," if models[model_names[1]]['peak_ram'] is not None else "Null," 
+        row_text += f"{models[model_names[0]]['param_count']}," if models[model_names[0]]['param_count'] is not None else "Null," 
+        row_text += f"{models[model_names[1]]['param_count']}," if models[model_names[1]]['param_count'] is not None else "Null,"
         text += row_text + "\n"
 
     with open(file_path, 'w') as f:
@@ -122,7 +121,7 @@ def evaluate_flash_and_peak_RAM_occupancy(stm32_path, tflite_model_path) :
 
     return int(Flash), int(RAM)
 
-def plot(log, model_names, file_path):
+def plot_losses_and_accuracies(log, model_names, file_path):
     def plot_loss(ax, hist, model_name):
         ax.set_xlabel("Epoch")
         ax.set_ylabel("Loss")
@@ -239,9 +238,9 @@ def main():
                         temp_log[model_name]["peak_ram"] = peak_ram
                         
                     # plot loss
-                    plot(temp_log, list(model_list.keys()), decision_variable_dir / f"loss.png")
+                    plot_losses_and_accuracies(temp_log, list(model_list.keys()), decision_variable_dir / f"loss.png")
                             
-            write_model_log(model_log, model_log_file, list(model_list.keys()))    
+            write_compare_model_log(model_log, model_log_file, list(model_list.keys()))    
                         
             
             

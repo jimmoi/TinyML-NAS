@@ -20,11 +20,13 @@ class ColabNAS :
         num_classes,
         input_shape,
         save_path='.', 
-        path_to_stm32tflm='stm32tflm.exe'
+        path_to_stm32tflm='stm32tflm.exe',
+        learning_rate=1e-3,
+        epochs=100,
         ) :
         
-        self.learning_rate = 1e-3
-        self.epochs = 100 #minimum 2
+        self.learning_rate = learning_rate
+        self.epochs = epochs #minimum 2
 
         self.max_MACC = max_MACC
         self.max_Flash = max_Flash
@@ -76,8 +78,6 @@ class ColabNAS :
         with open(self.path_to_trained_models / f"{model_name}.tflite", 'wb') as f:
             f.write(tflite_quant_model)
 
-        (self.path_to_trained_models / f"{model_name}.h5").unlink()
-
     def evaluate_flash_and_peak_RAM_occupancy(self, model_name) :
         #quantize model to evaluate its peak RAM occupancy and its Flash occupancy
         self.quantize_model_uint8(model_name)
@@ -108,9 +108,6 @@ class ColabNAS :
             val_ds_mapped = self.validation_ds
         
         print(f"\n{model_name}\n")
-        checkpoint = tf.keras.callbacks.ModelCheckpoint(
-            str(self.path_to_trained_models / f"{model_name}.h5"), monitor='val_accuracy',
-            verbose=1, save_best_only=True, save_weights_only=False, mode='auto')
         #One epoch of training must be done before quantization, which is needed to evaluate RAM and Flash occupancy
         model.fit(train_ds_mapped, 
                   epochs=1, 
@@ -120,23 +117,32 @@ class ColabNAS :
         Flash, RAM = self.evaluate_flash_and_peak_RAM_occupancy(model_name)
         print(f"\nRAM: {RAM},\t Flash: {Flash},\t MACC: {MACC}\n")
         if MACC <= self.max_MACC and Flash <= self.max_Flash and RAM <= self.max_RAM and not number_of_cells_limited :
+            checkpoint = tf.keras.callbacks.ModelCheckpoint(
+            str(self.path_to_trained_models / f"{model_name}.h5"), monitor='val_accuracy',
+            verbose=1, save_best_only=True, save_weights_only=False, mode='auto')
+            
             hist = model.fit(train_ds_mapped, epochs=self.epochs - 1, validation_data=val_ds_mapped, validation_freq=1, callbacks=[checkpoint])
             self.quantize_model_uint8(model_name)
             
             stringio = io.StringIO()
             model.summary(print_fn=lambda x: stringio.write(x + '\n'))
             model_summary = stringio.getvalue()
-            return {'RAM': RAM,
-                    'Flash': Flash,
-                    'MACC': MACC,
-                    'model_architecture':model_summary,
-                    'max_val_acc':
-                    np.around(np.amax(hist.history['val_accuracy']), decimals=3)
-                    if 'hist' in locals() else -3,
-                    'final_train_loss': np.around(hist.history['loss'], 6),
-                    'final_val_loss': np.around(hist.history['val_loss'], 6),
-                    'output_shape': (h, w)
-                    }
+            
+            resulting_architecture_dict = {
+                'param_count' : model.count_params(),
+                'RAM': RAM,
+                'Flash': Flash,
+                'MACC': MACC,
+                'model_architecture':model_summary,
+                'max_val_acc':
+                np.around(np.amax(hist.history['val_accuracy']), decimals=3)
+                if 'hist' in locals() else -3,
+                'final_train_loss': np.around(hist.history['loss'], 6),
+                'final_val_loss': np.around(hist.history['val_loss'], 6),
+                'output_shape': (h, w)
+            }
+            
+            return resulting_architecture_dict
         else :
             return {'max_val_acc':0}
 
@@ -145,6 +151,7 @@ class ColabNAS :
         search_output = {
             "time":None,
             "iterations_accuracy":None,
+            "param_count":None,
             "RAM":None,
             "Flash":None,
             "MACC":None,
@@ -154,7 +161,8 @@ class ColabNAS :
             "path_to_best_architecture":None,
             "val_losses":None,
             "train_losses":None,
-            "output_shape":None
+            "output_shape":None,
+            "tflite_accuracy":None,
             
         }
         
@@ -167,28 +175,31 @@ class ColabNAS :
         resulting_architecture_dict, take_time, iterations_accuracy = nas.search()
 
         if (resulting_architecture_dict['max_val_acc'] > 0) :
-            resulting_architecture_name = f"k_{resulting_architecture_dict['k']}_c_{resulting_architecture_dict['c']}.tflite"
-            path_to_resulting_architecture = self.save_path / f"resulting_architecture_{resulting_architecture_name}"
-            (self.path_to_trained_models / f"{resulting_architecture_name}").rename(path_to_resulting_architecture)
+            tflite_model_name = f"k_{resulting_architecture_dict['k']}_c_{resulting_architecture_dict['c']}.tflite"
+            h5_model_name = f"k_{resulting_architecture_dict['k']}_c_{resulting_architecture_dict['c']}.h5"
+            
+            (self.path_to_trained_models / f"{h5_model_name}").rename(self.save_path / f"resulting_architecture_{h5_model_name}")
+            (self.path_to_trained_models / f"{tflite_model_name}").rename(self.save_path / f"resulting_architecture_{tflite_model_name}")
             shutil.rmtree(self.path_to_trained_models)
             
             if self.transform:
                 self.test_ds = self.transform(self.test_ds, patch_size=resulting_architecture_dict['output_shape'])[0]
-            tflite_accuracy = test_tflite_model(str(path_to_resulting_architecture), self.test_ds)
+            tflite_accuracy = test_tflite_model(str(self.save_path / f"resulting_architecture_{tflite_model_name}"), self.test_ds)
             
             print(f"\nResulting architecture: {resulting_architecture_dict}\n")
             search_output["time"] = str(take_time)
             search_output["iterations_accuracy"] = iterations_accuracy
+            search_output["param_count"] = resulting_architecture_dict['param_count']
             search_output["RAM"] = resulting_architecture_dict['RAM']
             search_output["Flash"] = resulting_architecture_dict['Flash']
             search_output["MACC"] = resulting_architecture_dict['MACC']
             search_output["val_accuracy"] = resulting_architecture_dict['max_val_acc']
             search_output["decision_variables"] = {'k':resulting_architecture_dict['k'], 'c':resulting_architecture_dict['c']}
             search_output["model_architecture"] = resulting_architecture_dict['model_architecture']
-            search_output["path_to_best_architecture"] = str(path_to_resulting_architecture)
+            search_output["path_to_best_architecture"] = str(self.save_path / f"resulting_architecture_{tflite_model_name}")
             search_output["val_losses"] = resulting_architecture_dict['final_val_loss']
             search_output["train_losses"] = resulting_architecture_dict['final_train_loss']
-            search_output["tflite_accuracy"] = round(tflite_accuracy, 4)
+            search_output["tflite_accuracy"] = np.around(tflite_accuracy, 6)
             
             return search_output
         else :
