@@ -75,12 +75,14 @@ def load_data_kfold(data_dir, input_shape, batch_size, k_folds=5, cache=True):
         
         val_ds = make_dataset(all_image_paths[val_idx], all_labels[val_idx],
                                 input_shape, num_classes, batch_size, shuffle=False)
-
+        
+        test_ds = make_dataset(all_image_paths[val_idx], all_labels[val_idx],
+                                input_shape, num_classes, batch_size=1, shuffle=False)
         if cache:
             train_ds = train_ds.cache()
             val_ds = val_ds.cache()
-        folds.append((train_ds, val_ds))
-
+            test_ds = test_ds.cache().prefetch(tf.data.AUTOTUNE)
+        folds.append((train_ds, val_ds, test_ds))
     return folds, num_classes
 
 def write_compare_model_log(model_log, file_path, model_names):
@@ -229,7 +231,7 @@ def main():
         print("No GPU devices found. TensorFlow is likely using the CPU.")
         
         
-    all_experiment_dir = Path('Experiments_KFolds2')
+    all_experiment_dir = Path('Experiments_KFolds')
     all_experiment_dir.mkdir(exist_ok=True)
         
     ## Experiment Settings
@@ -250,7 +252,7 @@ def main():
     
     datasets_dir = Path("Datasets")
     for data_dir in datasets_dir.iterdir():
-        if data_dir.is_dir() and data_dir.name == "Animals-3":
+        if data_dir.is_dir() and data_dir.name == "MNIST":
             experiment_dir = all_experiment_dir / data_dir.name
             experiment_dir.mkdir(parents=True, exist_ok=True)
             
@@ -261,7 +263,7 @@ def main():
             folds, num_classes = load_data_kfold(data_dir, input_shape=input_shape, batch_size=batch_size, k_folds=5)
 
             # 2. ITERATE THROUGH FOLDS
-            for fold_idx, (train_ds, validation_ds) in enumerate(folds):
+            for fold_idx, (train_ds, validation_ds, test_ds) in enumerate(folds):
                 fold_dir = experiment_dir / f"fold_{fold_idx}"
                 fold_dir.mkdir(parents=True, exist_ok=True)
                 
@@ -275,7 +277,7 @@ def main():
                 data = {
                     "train": train_ds,
                     "validation": validation_ds,
-                    "test": validation_ds,
+                    "test": test_ds,
                 }
                         
                 for model_name, ModelClass in model_list.items():
@@ -315,7 +317,7 @@ def main():
                     
                     # tflite model
                     tflite_model_file = search_output["path_to_best_architecture"]
-                    result_metrices, report, cm = test_tflite_model(str(tflite_model_file), validation_ds)
+                    result_metrices, report, cm = test_tflite_model(str(tflite_model_file), test_ds)
                     temp_log[model_name].update(result_metrices)
                     search_output['classification_report'] = report
                     
@@ -331,3 +333,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
