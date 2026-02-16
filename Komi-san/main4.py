@@ -231,7 +231,7 @@ def main():
         print("No GPU devices found. TensorFlow is likely using the CPU.")
         
         
-    all_experiment_dir = Path('Experiments_KFolds')
+    all_experiment_dir = Path('Experiments_KFolds2')
     all_experiment_dir.mkdir(exist_ok=True)
         
     ## Experiment Settings
