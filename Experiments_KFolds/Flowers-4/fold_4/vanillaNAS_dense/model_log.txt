@@ -1,0 +1,78 @@
+Time: 0:04:14.151931
+
+Decision Variable: {'k': 8, 'c': 2}
+
+Tflite Accuracy: 0.917661
+
+Classification Report: 
+              precision    recall  f1-score   support
+
+           0       0.87      0.97      0.91       210
+           1       0.94      0.95      0.94       210
+           2       0.89      0.86      0.87       209
+           3       0.99      0.89      0.94       209
+
+    accuracy                           0.92       838
+   macro avg       0.92      0.92      0.92       838
+weighted avg       0.92      0.92      0.92       838
+
+
+Architecture: 
+Model: "model_91"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ input_92 (InputLayer)       [(None, 50, 50, 3)]       0         
+                                                                 
+ conv2d_270 (Conv2D)         (None, 50, 50, 8)         224       
+                                                                 
+ batch_normalization_314 (Ba  (None, 50, 50, 8)        32        
+ tchNormalization)                                               
+                                                                 
+ re_lu_269 (ReLU)            (None, 50, 50, 8)         0         
+                                                                 
+ max_pooling2d_133 (MaxPooli  (None, 25, 25, 8)        0         
+ ng2D)                                                           
+                                                                 
+ conv2d_271 (Conv2D)         (None, 25, 25, 16)        1168      
+                                                                 
+ batch_normalization_315 (Ba  (None, 25, 25, 16)       64        
+ tchNormalization)                                               
+                                                                 
+ re_lu_270 (ReLU)            (None, 25, 25, 16)        0         
+                                                                 
+ max_pooling2d_134 (MaxPooli  (None, 12, 12, 16)       0         
+ ng2D)                                                           
+                                                                 
+ conv2d_272 (Conv2D)         (None, 12, 12, 24)        3480      
+                                                                 
+ batch_normalization_316 (Ba  (None, 12, 12, 24)       96        
+ tchNormalization)                                               
+                                                                 
+ re_lu_271 (ReLU)            (None, 12, 12, 24)        0         
+                                                                 
+ global_average_pooling2d_91  (None, 24)               0         
+  (GlobalAveragePooling2D)                                       
+                                                                 
+ dense_90 (Dense)            (None, 24)                600       
+                                                                 
+ batch_normalization_317 (Ba  (None, 24)               96        
+ tchNormalization)                                               
+                                                                 
+ re_lu_272 (ReLU)            (None, 24)                0         
+                                                                 
+ dense_91 (Dense)            (None, 4)                 100       
+                                                                 
+ batch_normalization_318 (Ba  (None, 4)                16        
+ tchNormalization)                                               
+                                                                 
+ softmax_91 (Softmax)        (None, 4)                 0         
+                                                                 
+=================================================================
+Total params: 5,876
+Trainable params: 5,724
+Non-trainable params: 152
+_________________________________________________________________
+
+
+
