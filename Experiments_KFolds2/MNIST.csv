@@ -1,0 +1,6 @@
+,vanillaNAS,JimmyNAS,diff,percent_diff
+acc,0.979,0.98,0.001,0.102
+tflite_acc,0.972,0.974,0.002,0.206
+tflite_precision,0.972,0.975,0.003,0.309
+tflite_recall,0.972,0.974,0.002,0.206
+tflite_f1,0.972,0.974,0.002,0.206
