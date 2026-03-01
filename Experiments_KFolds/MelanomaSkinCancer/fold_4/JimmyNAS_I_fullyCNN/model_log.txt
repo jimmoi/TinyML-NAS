@@ -1,0 +1,56 @@
+Time: 0:04:54.742082
+
+Decision Variable: {'k': 8, 'c': 1}
+
+Tflite Accuracy: 0.894
+
+Classification Report: 
+              precision    recall  f1-score   support
+
+           0       0.92      0.86      0.89       500
+           1       0.87      0.93      0.90       500
+
+    accuracy                           0.89      1000
+   macro avg       0.90      0.89      0.89      1000
+weighted avg       0.90      0.89      0.89      1000
+
+
+Architecture: 
+Model: "model_107"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ input_108 (InputLayer)      [(None, 50, 50, 3)]       0         
+                                                                 
+ conv2d_312 (Conv2D)         (None, 50, 50, 8)         224       
+                                                                 
+ batch_normalization_382 (Ba  (None, 50, 50, 8)        32        
+ tchNormalization)                                               
+                                                                 
+ re_lu_323 (ReLU)            (None, 50, 50, 8)         0         
+                                                                 
+ max_pooling2d_157 (MaxPooli  (None, 25, 25, 8)        0         
+ ng2D)                                                           
+                                                                 
+ conv2d_313 (Conv2D)         (None, 25, 25, 16)        1168      
+                                                                 
+ batch_normalization_383 (Ba  (None, 25, 25, 16)       64        
+ tchNormalization)                                               
+                                                                 
+ re_lu_324 (ReLU)            (None, 25, 25, 16)        0         
+                                                                 
+ conv2d_314 (Conv2D)         (None, 25, 25, 2)         34        
+                                                                 
+ global_average_pooling2d_10  (None, 2)                0         
+ 7 (GlobalAveragePooling2D)                                      
+                                                                 
+ softmax_107 (Softmax)       (None, 2)                 0         
+                                                                 
+=================================================================
+Total params: 1,522
+Trainable params: 1,474
+Non-trainable params: 48
+_________________________________________________________________
+
+
+

@@ -1,0 +1,66 @@
+Time: 0:04:28.365202
+
+Decision Variable: {'k': 8, 'c': 2}
+
+Tflite Accuracy: 0.659389
+
+Classification Report: 
+              precision    recall  f1-score   support
+
+           0       0.74      0.55      0.63       242
+           1       0.61      0.79      0.69       216
+
+    accuracy                           0.66       458
+   macro avg       0.67      0.67      0.66       458
+weighted avg       0.68      0.66      0.66       458
+
+
+Architecture: 
+Model: "model_90"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ input_91 (InputLayer)       [(None, 50, 50, 3)]       0         
+                                                                 
+ conv2d_240 (Conv2D)         (None, 50, 50, 8)         224       
+                                                                 
+ batch_normalization_285 (Ba  (None, 50, 50, 8)        32        
+ tchNormalization)                                               
+                                                                 
+ re_lu_240 (ReLU)            (None, 50, 50, 8)         0         
+                                                                 
+ max_pooling2d_105 (MaxPooli  (None, 25, 25, 8)        0         
+ ng2D)                                                           
+                                                                 
+ conv2d_241 (Conv2D)         (None, 25, 25, 16)        1168      
+                                                                 
+ batch_normalization_286 (Ba  (None, 25, 25, 16)       64        
+ tchNormalization)                                               
+                                                                 
+ re_lu_241 (ReLU)            (None, 25, 25, 16)        0         
+                                                                 
+ max_pooling2d_106 (MaxPooli  (None, 12, 12, 16)       0         
+ ng2D)                                                           
+                                                                 
+ conv2d_242 (Conv2D)         (None, 12, 12, 24)        3480      
+                                                                 
+ batch_normalization_287 (Ba  (None, 12, 12, 24)       96        
+ tchNormalization)                                               
+                                                                 
+ re_lu_242 (ReLU)            (None, 12, 12, 24)        0         
+                                                                 
+ conv2d_243 (Conv2D)         (None, 12, 12, 2)         50        
+                                                                 
+ global_average_pooling2d_90  (None, 2)                0         
+  (GlobalAveragePooling2D)                                       
+                                                                 
+ softmax_90 (Softmax)        (None, 2)                 0         
+                                                                 
+=================================================================
+Total params: 5,114
+Trainable params: 5,018
+Non-trainable params: 96
+_________________________________________________________________
+
+
+

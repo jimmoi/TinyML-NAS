@@ -1,0 +1,67 @@
+Time: 0:05:03.468718
+
+Decision Variable: {'k': 8, 'c': 1}
+
+Tflite Accuracy: 0.852396
+
+Classification Report: 
+              precision    recall  f1-score   support
+
+           0       0.84      0.87      0.86       524
+           1       0.91      0.84      0.87       422
+           2       0.83      0.84      0.84       619
+
+    accuracy                           0.85      1565
+   macro avg       0.86      0.85      0.85      1565
+weighted avg       0.85      0.85      0.85      1565
+
+
+Architecture: 
+Model: "model_27"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ input_28 (InputLayer)       [(None, 50, 50, 3)]       0         
+                                                                 
+ conv2d_79 (Conv2D)          (None, 50, 50, 8)         224       
+                                                                 
+ batch_normalization_97 (Bat  (None, 50, 50, 8)        32        
+ chNormalization)                                                
+                                                                 
+ re_lu_82 (ReLU)             (None, 50, 50, 8)         0         
+                                                                 
+ max_pooling2d_40 (MaxPoolin  (None, 25, 25, 8)        0         
+ g2D)                                                            
+                                                                 
+ conv2d_80 (Conv2D)          (None, 25, 25, 16)        1168      
+                                                                 
+ batch_normalization_98 (Bat  (None, 25, 25, 16)       64        
+ chNormalization)                                                
+                                                                 
+ re_lu_83 (ReLU)             (None, 25, 25, 16)        0         
+                                                                 
+ global_average_pooling2d_27  (None, 16)               0         
+  (GlobalAveragePooling2D)                                       
+                                                                 
+ dense_30 (Dense)            (None, 16)                272       
+                                                                 
+ batch_normalization_99 (Bat  (None, 16)               64        
+ chNormalization)                                                
+                                                                 
+ re_lu_84 (ReLU)             (None, 16)                0         
+                                                                 
+ dense_31 (Dense)            (None, 3)                 51        
+                                                                 
+ batch_normalization_100 (Ba  (None, 3)                12        
+ tchNormalization)                                               
+                                                                 
+ softmax_27 (Softmax)        (None, 3)                 0         
+                                                                 
+=================================================================
+Total params: 1,887
+Trainable params: 1,801
+Non-trainable params: 86
+_________________________________________________________________
+
+
+

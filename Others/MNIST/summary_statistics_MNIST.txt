@@ -1,0 +1,33 @@
+============================================================
+SUMMARY STATISTICS
+============================================================
+
+Best Accuracy:
+  VanillaNAS avg: 0.83
+  JimmyNAS avg:   0.76
+  Difference:     -8.59%
+
+TFLite Accuracy:
+  VanillaNAS avg: 0.81
+  JimmyNAS avg:   0.74
+  Difference:     -7.64%
+
+MACs:
+  VanillaNAS avg: 1020740.50
+  JimmyNAS avg:   1072534.50
+  Difference:     +5.07%
+
+Flash (bytes):
+  VanillaNAS avg: 12254.40
+  JimmyNAS avg:   11328.80
+  Difference:     -7.55%
+
+Peak RAM (bytes):
+  VanillaNAS avg: 26163.20
+  JimmyNAS avg:   29491.20
+  Difference:     +12.72%
+
+Parameters:
+  VanillaNAS avg: 5675.00
+  JimmyNAS avg:   5182.00
+  Difference:     -8.69%
